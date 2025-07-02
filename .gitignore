@@ -1,0 +1,25 @@
+# IntelliJ IDEA
+.idea/
+*.iml
+
+# Arquivos temporários do sistema
+*.log
+*.tmp
+*.swp
+.DS_Store
+Thumbs.db
+
+# Build do Maven
+/target/
+
+# Arquivos de configuração de execução
+*.iws
+.vscode/
+
+# Arquivos de relatórios
+*.xml
+*.html
+*.json
+
+# Testes gerados ou relatórios do Serenity
+target/site/serenity/
