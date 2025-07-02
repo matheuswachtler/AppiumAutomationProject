@@ -1,13 +1,15 @@
 package utils;
 
+import io.appium.java_client.android.AndroidDriver;
+import org.apache.commons.io.output.TeeOutputStream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.TestInfo; // Importar TestInfo para obter o nome do teste
+import org.junit.jupiter.api.TestInfo;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.time.LocalDateTime;
-import java.util.Optional;
 
 public class HooksManager {
 
@@ -15,19 +17,21 @@ public class HooksManager {
     private ByteArrayOutputStream baos;
     private PrintStream oldOut;
     private PrintStream oldErr;
-    private LocalDateTime testStartTime; // Para capturar o tempo de início
+    private LocalDateTime testStartTime;
 
-    // Usaremos o TestInfo para obter o nome do teste e tags
     @BeforeEach
     public void setup(TestInfo testInfo) {
-        testStartTime = LocalDateTime.now(); // Captura o tempo de início
+        testStartTime = LocalDateTime.now();
 
-        // Redireciona System.out e System.err para capturar logs
         oldOut = System.out;
         oldErr = System.err;
         baos = new ByteArrayOutputStream();
-        System.setOut(new PrintStream(baos));
-        System.setErr(new PrintStream(baos));
+
+        TeeOutputStream teeOut = new TeeOutputStream(oldOut, baos);
+        TeeOutputStream teeErr = new TeeOutputStream(oldErr, baos);
+
+        System.setOut(new PrintStream(teeOut, true));
+        System.setErr(new PrintStream(teeErr, true));
 
         System.out.println("Starting Appium session...");
 
@@ -47,11 +51,10 @@ public class HooksManager {
     }
 
     @AfterEach
-    public void tearDown(TestInfo testInfo) { // Injetar TestInfo aqui também para acessar o status
+    public void tearDown(TestInfo testInfo) {
         System.out.println("Closing Appium session...");
         DriverManager.quitDriver();
 
-        // Restaurar os streams originais ANTES de imprimir os logs capturados
         System.setOut(oldOut);
         System.setErr(oldErr);
 
@@ -63,16 +66,14 @@ public class HooksManager {
         LocalDateTime testEndTime = LocalDateTime.now();
 
         if (this.pdfReporter != null) {
-            String finalTestStatus = "UNKNOWN";
-            if (testInfo.getTestClass().isPresent() && testInfo.getTestMethod().isPresent()) {
-                finalTestStatus = "COMPLETED";
-            }
+            String finalTestStatus = "COMPLETED";
 
             pdfReporter.setLogsContent(capturedLogs);
             pdfReporter.setExecutionTimes(testStartTime, testEndTime);
-            pdfReporter.setTestStatus(finalTestStatus); // Define o status no reporter
+            pdfReporter.setTestStatus(finalTestStatus);
             pdfReporter.closeReport();
         }
+
         System.out.println("Appium session closed.");
 
         try {

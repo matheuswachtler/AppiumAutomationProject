@@ -12,7 +12,6 @@ public class DriverManager {
 
     public static AndroidDriver getDriver() {
         if (driver == null) {
-            // Lança um erro se o driver for solicitado antes de ser inicializado pelo HooksManager
             throw new IllegalStateException("Appium driver is not initialized. Ensure HooksManager is properly configured and running.");
         }
         return driver;
@@ -24,7 +23,6 @@ public class DriverManager {
             return;
         }
         if (pdfReporter == null) {
-            // Garante que o PdfReporter seja fornecido pelo HooksManager
             throw new IllegalArgumentException("PdfReporter cannot be null during driver initialization. It must be provided by HooksManager.");
         }
 

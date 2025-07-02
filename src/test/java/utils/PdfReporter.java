@@ -39,7 +39,9 @@ public class PdfReporter {
                 Files.createDirectories(contextDirPath);
             }
             String timestamp = LocalDateTime.now().format(DATE_TIME_FORMATTER);
-            this.reportFilePath = contextDirPath.resolve(reportName + "_" + platformName + "_" + timestamp + ".pdf").toString();
+            this.reportFilePath = contextDirPath
+                    .resolve(reportName + "_" + platformName + "_" + timestamp + ".pdf")
+                    .toString();
             System.out.println("PDF report initialized at: " + this.reportFilePath);
         } catch (IOException e) {
             System.err.println("Error initializing PDF report directory or file path: " + e.getMessage());
@@ -159,6 +161,10 @@ public class PdfReporter {
         }
     }
 
+    float adjustVert(float baseY, float rowHeight, float fontSize) {
+        return baseY + (rowHeight - fontSize * 0.7f) / 2;
+    }
+
     public void closeReport() {
         if (document != null) {
             PDPageContentStream contentStream = null;
@@ -236,18 +242,16 @@ public class PdfReporter {
                 }
 
                 PDType1Font boldFont = new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD);
-                PDType1Font regularFont = new PDType1Font(Standard14Fonts.FontName.HELVETICA);
                 float fontSize = 12;
                 float textPadding = 10;
 
-                float tableWidth = 300;
+                float pageCurrentWidth = currentPage.getMediaBox().getWidth();
+                float tableX = 20;
+                float tableWidth = pageCurrentWidth - 40;
                 float summaryTableHeight = 60;
                 float tableY = 50;
-                float tableX = (currentPage.getMediaBox().getWidth() - tableWidth) / 2;
-
                 float rowHeight = summaryTableHeight / 3;
                 float col1Width = tableWidth / 2;
-                float col2Width = tableWidth / 2;
 
                 contentStream.setLineWidth(0.5f);
                 contentStream.setStrokingColor(0, 0, 0);
@@ -258,61 +262,64 @@ public class PdfReporter {
                 contentStream.lineTo(tableX + tableWidth, tableY + rowHeight);
                 contentStream.stroke();
 
-                contentStream.moveTo(tableX, tableY + 2 * rowHeight);
-                contentStream.lineTo(tableX + tableWidth, tableY + 2 * rowHeight);
-                contentStream.stroke();
-
                 contentStream.moveTo(tableX + col1Width, tableY);
                 contentStream.lineTo(tableX + col1Width, tableY + summaryTableHeight);
                 contentStream.stroke();
 
+                contentStream.moveTo(tableX, tableY + 2 * rowHeight);
+                contentStream.lineTo(tableX + tableWidth, tableY + 2 * rowHeight);
+                contentStream.stroke();
+
                 contentStream.beginText();
                 contentStream.setFont(boldFont, fontSize);
-                contentStream.newLineAtOffset(tableX + textPadding, tableY + 2 * rowHeight + (rowHeight - fontSize) / 2);
-                contentStream.showText("Data");
+                contentStream.newLineAtOffset(tableX + textPadding, adjustVert(tableY + 2 * rowHeight, rowHeight, fontSize));
+                contentStream.showText("DATA");
                 contentStream.endText();
 
                 contentStream.beginText();
-                contentStream.setFont(regularFont, fontSize);
-                String formattedDate = (startTime != null) ? startTime.format(DISPLAY_DATE_TIME_FORMATTER) : "N/A";
-                contentStream.newLineAtOffset(tableX + col1Width + textPadding, tableY + 2 * rowHeight + (rowHeight - fontSize) / 2);
+                contentStream.setFont(boldFont, fontSize);
+                contentStream.newLineAtOffset(tableX + textPadding, adjustVert(tableY + rowHeight, rowHeight, fontSize));
+                contentStream.showText("TEMPO");
+                contentStream.endText();
+
+                contentStream.beginText();
+                contentStream.setFont(boldFont, fontSize);
+                contentStream.newLineAtOffset(tableX + textPadding, adjustVert(tableY, rowHeight, fontSize));
+                contentStream.showText("STATUS");
+                contentStream.endText();
+
+                String formattedDate = (startTime != null) ? startTime
+                        .format(DISPLAY_DATE_TIME_FORMATTER)
+                        .toUpperCase() : "N/A";
+                String durationString = "N/A";
+                if (startTime != null && endTime != null) {
+                    Duration duration = Duration.between(startTime, endTime);
+                    long seconds = duration.getSeconds();
+                    durationString = String.format("%d MIN %d SEG", seconds / 60, seconds % 60);
+                }
+
+                contentStream.beginText();
+                contentStream.setFont(boldFont, fontSize);
+                contentStream.newLineAtOffset(tableX + col1Width + textPadding, adjustVert(tableY + 2 * rowHeight, rowHeight, fontSize));
                 contentStream.showText(formattedDate);
                 contentStream.endText();
 
                 contentStream.beginText();
                 contentStream.setFont(boldFont, fontSize);
-                contentStream.newLineAtOffset(tableX + textPadding, tableY + rowHeight + (rowHeight - fontSize) / 2);
-                contentStream.showText("Tempo");
-                contentStream.endText();
-
-                contentStream.beginText();
-                contentStream.setFont(regularFont, fontSize);
-                String durationString = "N/A";
-                if (startTime != null && endTime != null) {
-                    Duration duration = Duration.between(startTime, endTime);
-                    long seconds = duration.getSeconds();
-                    durationString = String.format("%d min %d seg", seconds / 60, seconds % 60);
-                }
-                contentStream.newLineAtOffset(tableX + col1Width + textPadding, tableY + rowHeight + (rowHeight - fontSize) / 2);
+                contentStream.newLineAtOffset(tableX + col1Width + textPadding, adjustVert(tableY + rowHeight, rowHeight, fontSize));
                 contentStream.showText(durationString);
                 contentStream.endText();
 
                 contentStream.beginText();
                 contentStream.setFont(boldFont, fontSize);
-                contentStream.newLineAtOffset(tableX + textPadding, tableY + (rowHeight - fontSize) / 2);
-                contentStream.showText("Status");
-                contentStream.endText();
-
-                contentStream.beginText();
-                contentStream.setFont(regularFont, fontSize);
-                contentStream.newLineAtOffset(tableX + col1Width + textPadding, tableY + (rowHeight - fontSize) / 2);
-                contentStream.showText(this.testStatus);
+                contentStream.newLineAtOffset(tableX + col1Width + textPadding, adjustVert(tableY, rowHeight, fontSize));
+                contentStream.showText(this.testStatus.toUpperCase());
                 contentStream.endText();
 
                 contentStream.close();
-
                 document.save(this.reportFilePath);
                 System.out.println("PDF report saved and closed: " + this.reportFilePath);
+
             } catch (IOException e) {
                 System.err.println("Error saving or closing PDF report: " + e.getMessage());
             } finally {
