@@ -15,7 +15,7 @@ public class QA123456IT extends HooksManager {
     @Tag("login")
     @Description("As a Sauce Labs user," +
             "I want to access the system with my valid credentials,\n" +
-          h  "so that I can use the functionalities available after logging in.")
+            "so that I can use the functionalities available after logging in.")
     public void QA123456() throws Exception {
         LoginFunc login = new LoginFunc(DriverManager.getDriver());
 
