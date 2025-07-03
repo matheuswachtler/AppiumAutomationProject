@@ -50,23 +50,8 @@ public class PdfReporter {
                     .toString();
             System.out.println("PDF report initialized at: " + this.reportFilePath);
 
-            PDPage firstPage = new PDPage(PDRectangle.A4);
-            this.document.addPage(firstPage);
+            addPageWithMarginAndFooter(); // Adiciona a primeira página com margem e rodapé estático
             System.out.println("First blank page added to PDF report.");
-
-            try (PDPageContentStream contentStream = new PDPageContentStream(document, firstPage, PDPageContentStream.AppendMode.APPEND, true, true)) {
-                float margin = 30;
-                float pageWidth = firstPage.getMediaBox().getWidth();
-                float pageHeight = firstPage.getMediaBox().getHeight();
-
-                contentStream.setStrokingColor(Color.BLACK);
-                contentStream.setLineWidth(1f);
-
-                contentStream.addRect(margin, margin, pageWidth - (2 * margin), pageHeight - (2 * margin));
-                contentStream.stroke();
-            } catch (IOException e) {
-                System.err.println("Error adding margin to first PDF page: " + e.getMessage());
-            }
 
         } catch (IOException e) {
             System.err.println("Error initializing PDF report directory or file path: " + e.getMessage());
@@ -109,49 +94,45 @@ public class PdfReporter {
             return;
         }
 
+        PDImageXObject pdImage = null;
         try {
-            PDImageXObject pdImage = PDImageXObject.createFromByteArray(document, screenshotBytes, screenshotName);
+            pdImage = PDImageXObject.createFromByteArray(document, screenshotBytes, screenshotName);
 
-            PDPage page = new PDPage(PDRectangle.A4);
-            document.addPage(page);
+            PDPage page = addPageWithMarginAndFooter(); // Adiciona nova página com margem e rodapé estático
 
             PDRectangle mediaBox = page.getMediaBox();
             float pageWidth = mediaBox.getWidth();
             float pageHeight = mediaBox.getHeight();
+            float margin = 30;
 
             float imageWidth = pdImage.getWidth();
             float imageHeight = pdImage.getHeight();
 
             float scaleX = pageWidth / imageWidth;
             float scaleY = pageHeight / imageHeight;
-            float finalScale = Math.min(scaleX, scaleY) * 0.6f;
+            float finalScale = Math.min(scaleX, scaleY) * 0.7f;
 
             float scaledWidth = imageWidth * finalScale;
             float scaledHeight = imageHeight * finalScale;
 
-            float imageRightMargin = 20;
-            float imageX = pageWidth - scaledWidth - imageRightMargin;
+            float imageX = (pageWidth - scaledWidth) / 2;
             float imageY = (pageHeight - scaledHeight) / 2;
 
-            try (PDPageContentStream contentStream = new PDPageContentStream(document, page)) {
-                contentStream.setLineWidth(0.5f);
+            try (PDPageContentStream contentStream = new PDPageContentStream(document, page, PDPageContentStream.AppendMode.APPEND, true, true)) {
+                contentStream.setLineWidth(1f);
                 contentStream.setStrokingColor(Color.BLACK);
 
-                float tableWidth = pageWidth - 40;
+                float tableWidth = pageWidth - (2 * margin);
                 float tableHeight = 40;
-                float tableY = pageHeight - 60;
-                float tableX = (pageWidth - tableWidth) / 2;
+                float tableY = pageHeight - margin - tableHeight;
+                float tableX = margin;
 
                 float tableTopY = tableY + tableHeight;
                 float tableBottomY = tableY;
 
                 float rowHeight = tableHeight / 2;
-                float col1Width = tableWidth / 3;
+                float col1Width = tableWidth * 0.25f;
                 float col2Width = tableWidth - col1Width;
-
-                PDType1Font boldFont = new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD);
-                float headerFontSize = 10;
-                float textPadding = 5;
 
                 contentStream.addRect(tableX, tableY, tableWidth, tableHeight);
                 contentStream.stroke();
@@ -164,6 +145,11 @@ public class PdfReporter {
                 contentStream.lineTo(tableX + col1Width, tableY + tableHeight);
                 contentStream.stroke();
 
+                PDType1Font boldFont = new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD);
+                PDType1Font regularFont = new PDType1Font(Standard14Fonts.FontName.HELVETICA); // Nova fonte normal
+                float headerFontSize = 10;
+                float textPadding = 5;
+
                 contentStream.beginText();
                 contentStream.setFont(boldFont, headerFontSize);
                 float scriptTextX = tableX + textPadding;
@@ -173,7 +159,7 @@ public class PdfReporter {
                 contentStream.endText();
 
                 contentStream.beginText();
-                contentStream.setFont(boldFont, headerFontSize);
+                contentStream.setFont(regularFont, headerFontSize); // Alterado para fonte normal
                 float testNumTextX = tableX + col1Width + textPadding;
                 float testNumTextY = tableY + rowHeight + (rowHeight - headerFontSize) / 2f;
                 contentStream.newLineAtOffset(testNumTextX, testNumTextY);
@@ -189,7 +175,7 @@ public class PdfReporter {
                 contentStream.endText();
 
                 contentStream.beginText();
-                contentStream.setFont(boldFont, headerFontSize);
+                contentStream.setFont(regularFont, headerFontSize); // Alterado para fonte normal
                 float stepContentX = tableX + col1Width + textPadding;
                 float stepContentY = tableY + (rowHeight - headerFontSize) / 2f;
                 contentStream.newLineAtOffset(stepContentX, stepContentY);
@@ -197,33 +183,6 @@ public class PdfReporter {
                 contentStream.endText();
 
                 contentStream.drawImage(pdImage, imageX, imageY, scaledWidth, scaledHeight);
-
-                float lineSeparatorX = imageX - 5;
-                float lineSeparatorStartY = tableTopY;
-                float lineSeparatorEndY = 30;
-
-                contentStream.setLineWidth(0.5f);
-                contentStream.setStrokingColor(Color.BLACK);
-                contentStream.moveTo(lineSeparatorX, lineSeparatorStartY);
-                contentStream.lineTo(lineSeparatorX, lineSeparatorEndY);
-                contentStream.stroke();
-
-                float leftMarginLineX = tableX;
-                float bottomPageY = 30;
-
-                contentStream.moveTo(leftMarginLineX, tableTopY);
-                contentStream.lineTo(leftMarginLineX, bottomPageY);
-                contentStream.stroke();
-
-                float rightMarginLineX = tableX + tableWidth;
-
-                contentStream.moveTo(rightMarginLineX, tableTopY);
-                contentStream.lineTo(rightMarginLineX, bottomPageY);
-                contentStream.stroke();
-
-                contentStream.moveTo(leftMarginLineX, tableBottomY);
-                contentStream.lineTo(rightMarginLineX, tableBottomY);
-                contentStream.stroke();
 
             }
             System.out.println("Screenshot '" + screenshotName + "' added to PDF.");
@@ -237,17 +196,62 @@ public class PdfReporter {
         return baseY + (rowHeight - (fontSize * 0.7f)) / 2f;
     }
 
+    // Método para adicionar uma nova página com margem e os quadros estáticos do rodapé
+    private PDPage addPageWithMarginAndFooter() throws IOException {
+        PDPage newPage = new PDPage(PDRectangle.A4);
+        document.addPage(newPage);
+
+        try (PDPageContentStream contentStream = new PDPageContentStream(document, newPage, PDPageContentStream.AppendMode.APPEND, true, true)) {
+            float margin = 30;
+            float pageWidth = newPage.getMediaBox().getWidth();
+            float pageHeight = newPage.getMediaBox().getHeight();
+
+            contentStream.setStrokingColor(Color.BLACK);
+            contentStream.setLineWidth(1f);
+
+            // Desenha a margem principal da página
+            contentStream.addRect(margin, margin, pageWidth - (2 * margin), pageHeight - (2 * margin));
+            contentStream.stroke();
+
+            float footerTableHeight = 20;
+            float footerTableX = margin;
+            float footerTableWidth = pageWidth - (2 * margin);
+            float footerCol1Width = footerTableWidth * 0.25f; // 25% para a primeira coluna
+
+            // Quadro "PAGE" / número da página
+            float pageRowY = margin; // Posiciona o rodapé acima da margem inferior
+            contentStream.addRect(footerTableX, pageRowY, footerTableWidth, footerTableHeight);
+            contentStream.stroke();
+
+            contentStream.moveTo(footerTableX + footerCol1Width, pageRowY);
+            contentStream.lineTo(footerTableX + footerCol1Width, pageRowY + footerTableHeight);
+            contentStream.stroke();
+
+            // Célula esquerda: "PAGE"
+            contentStream.beginText();
+            // Alterado o tamanho da fonte para 12 para padronizar e removido o negrito
+            contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 12);
+            // Ajustado o posicionamento vertical para o novo tamanho da fonte
+            float pageTextY = pageRowY + (footerTableHeight - 12) / 2f;
+            contentStream.newLineAtOffset(footerTableX + 5, pageTextY);
+            contentStream.showText("PAGE");
+            contentStream.endText();
+
+        }
+        return newPage;
+    }
+
     public void closeReport() {
         if (document != null) {
             PDPageContentStream contentStream = null;
             PDPage currentPage;
 
             try {
+                // Adiciona a página de logs se houver conteúdo
                 if (!logsContent.isEmpty()) {
-                    currentPage = new PDPage(PDRectangle.A4);
-                    document.addPage(currentPage);
+                    currentPage = addPageWithMarginAndFooter(); // Garante que a página de logs tem o rodapé estático
 
-                    contentStream = new PDPageContentStream(document, currentPage);
+                    contentStream = new PDPageContentStream(document, currentPage, PDPageContentStream.AppendMode.APPEND, true, true);
                     PDType1Font logFont = new PDType1Font(Standard14Fonts.FontName.HELVETICA);
                     float logFontSize = 10;
                     float leading = (float) (1.8f * logFontSize);
@@ -292,12 +296,10 @@ public class PdfReporter {
                             contentStream.endText();
                             contentStream.close();
 
-                            currentPage = new PDPage(PDRectangle.A4);
-                            document.addPage(currentPage);
-                            contentStream = new PDPageContentStream(document, currentPage);
+                            currentPage = addPageWithMarginAndFooter(); // Adiciona nova página de logs com rodapé estático
+                            contentStream = new PDPageContentStream(document, currentPage, PDPageContentStream.AppendMode.APPEND, true, true);
                             contentStream.setFont(logFont, logFontSize);
                             contentStream.setLeading(leading);
-                            contentStream.beginText();
                             currentY = currentPage.getMediaBox().getHeight() - margin;
                             contentStream.newLineAtOffset(startX, currentY);
                         }
@@ -309,10 +311,12 @@ public class PdfReporter {
                     contentStream.close();
                 }
 
+                // --- Desenho da tabela de sumário na PRIMEIRA PÁGINA ---
                 PDPage summaryPage = document.getPage(0);
                 contentStream = new PDPageContentStream(document, summaryPage, PDPageContentStream.AppendMode.APPEND, true, true);
 
                 PDType1Font boldFont = new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD);
+                PDType1Font regularFont = new PDType1Font(Standard14Fonts.FontName.HELVETICA); // Nova fonte normal
 
                 float fontSize = 12;
                 float textPadding = 10;
@@ -417,6 +421,16 @@ public class PdfReporter {
                 contentStream.lineTo(tableX + tableWidth, tableY + descriptionCellActualHeight);
                 contentStream.stroke();
 
+                // Linha que separa EXECUTION DATE e EXECUTION TIME
+                contentStream.moveTo(tableX, tableY + summaryTableHeight - standardFixedRowHeight);
+                contentStream.lineTo(tableX + tableWidth, tableY + summaryTableHeight - standardFixedRowHeight);
+                contentStream.stroke();
+
+                contentStream.moveTo(tableX, tableY + summaryTableHeight - (2 * standardFixedRowHeight)); // Linha entre EXECUTION TIME e TEST RESULT
+                contentStream.lineTo(tableX + tableWidth, tableY + summaryTableHeight - (2 * standardFixedRowHeight));
+                contentStream.stroke();
+
+
                 contentStream.moveTo(tableX, tableY + descriptionCellActualHeight + testNameCellActualHeight);
                 contentStream.lineTo(tableX + tableWidth, tableY + descriptionCellActualHeight + testNameCellActualHeight);
                 contentStream.stroke();
@@ -431,10 +445,6 @@ public class PdfReporter {
 
                 contentStream.moveTo(tableX, tableY + descriptionCellActualHeight + testNameCellActualHeight + testCodeRowHeight + responsibleRowHeight + standardFixedRowHeight);
                 contentStream.lineTo(tableX + tableWidth, tableY + descriptionCellActualHeight + testNameCellActualHeight + testCodeRowHeight + responsibleRowHeight + standardFixedRowHeight);
-                contentStream.stroke();
-
-                contentStream.moveTo(tableX, tableY + descriptionCellActualHeight + testNameCellActualHeight + testCodeRowHeight + responsibleRowHeight + (2 * standardFixedRowHeight));
-                contentStream.lineTo(tableX + tableWidth, tableY + descriptionCellActualHeight + testNameCellActualHeight + testCodeRowHeight + responsibleRowHeight + (2 * standardFixedRowHeight));
                 contentStream.stroke();
 
                 contentStream.moveTo(tableX + col1Width, tableY);
@@ -522,7 +532,7 @@ public class PdfReporter {
                 contentStream.setFont(boldFont, fontSize);
                 float testCodeLabelY = adjustVert(tableY + descriptionCellActualHeight + testNameCellActualHeight, testCodeRowHeight, fontSize);
                 contentStream.newLineAtOffset(tableX + textPadding, testCodeLabelY);
-                contentStream.showText("TEST CODE");
+                contentStream.showText("SCRIPT");
                 contentStream.endText();
 
                 contentStream.beginText();
@@ -605,6 +615,43 @@ public class PdfReporter {
                 }
 
                 contentStream.close();
+
+                // --- Início do bloco: Preenchimento dinâmico do rodapé ---
+                int totalPageCount = document.getPages().getCount();
+                float margin = 30;
+                float footerTableHeight = 20;
+                float footerTextPadding = 5;
+                PDType1Font footerFont = new PDType1Font(Standard14Fonts.FontName.HELVETICA); // Alterado para fonte normal
+                float footerFontSize = 12;
+
+
+                for (int i = 0; i < totalPageCount; i++) {
+                    PDPage page = document.getPage(i);
+                    try (PDPageContentStream footerContentStream = new PDPageContentStream(document, page, PDPageContentStream.AppendMode.APPEND, true, true)) {
+                        float pageWidth = page.getMediaBox().getWidth();
+                        float footerTableWidth = pageWidth - (2 * margin);
+                        float footerCol1Width = footerTableWidth * 0.25f; // 25% para a primeira coluna
+                        float footerTableX = margin; // Definindo aqui para o escopo do loop
+
+                        // Posições para o quadro "PAGE"
+                        float pageRowY = margin;
+                        String pageNumberText = (i + 1) + " of " + totalPageCount;
+                        float pageNumberTextWidth = footerFont.getStringWidth(pageNumberText) / 1000f * footerFontSize;
+                        // Ajustado o posicionamento horizontal para o novo tamanho da fonte
+                        float pageNumberX = footerTableX + footerCol1Width + (footerTableWidth - footerCol1Width - pageNumberTextWidth) / 2f;
+                        // Ajustado o posicionamento vertical para o novo tamanho da fonte
+                        float pageTextY = pageRowY + (footerTableHeight - footerFontSize) / 2f;
+
+                        // Preenche o número da página "X de Y"
+                        footerContentStream.beginText();
+                        footerContentStream.setFont(footerFont, footerFontSize);
+                        footerContentStream.newLineAtOffset(pageNumberX, pageTextY);
+                        footerContentStream.showText(pageNumberText);
+                        footerContentStream.endText();
+                    }
+                }
+                // --- Fim do bloco: Preenchimento dinâmico do rodapé ---
+
 
                 document.save(this.reportFilePath);
                 System.out.println("PDF report saved and closed: " + this.reportFilePath);
