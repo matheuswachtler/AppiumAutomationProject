@@ -7,7 +7,7 @@ import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
 import org.apache.pdfbox.pdmodel.font.PDType1Font;
 import org.apache.pdfbox.pdmodel.font.Standard14Fonts;
-import java.awt.Color; // Importe esta classe
+import java.awt.Color;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -271,7 +271,6 @@ public class PdfReporter {
                 contentStream.lineTo(tableX + tableWidth, tableY + 2 * rowHeight);
                 contentStream.stroke();
 
-                // Escreve "EXECUTION DATE" e seu valor
                 contentStream.beginText();
                 contentStream.setFont(boldFont, fontSize);
                 contentStream.newLineAtOffset(tableX + textPadding, adjustVert(tableY + 2 * rowHeight, rowHeight, fontSize));
@@ -288,7 +287,6 @@ public class PdfReporter {
                 contentStream.showText(formattedDate);
                 contentStream.endText();
 
-                // Escreve "EXECUTION TIME" e seu valor
                 contentStream.beginText();
                 contentStream.setFont(boldFont, fontSize);
                 contentStream.newLineAtOffset(tableX + textPadding, adjustVert(tableY + rowHeight, rowHeight, fontSize));
@@ -308,41 +306,30 @@ public class PdfReporter {
                 contentStream.showText(durationString);
                 contentStream.endText();
 
-                // --- INÍCIO DA ALTERAÇÃO PARA O TEST RESULT ---
 
-                // Escreve o rótulo "TEST RESULT" em preto (cor padrão)
                 contentStream.beginText();
                 contentStream.setFont(boldFont, fontSize);
-                // Garante que a cor seja preta para o rótulo
                 contentStream.setNonStrokingColor(Color.BLACK);
                 contentStream.newLineAtOffset(tableX + textPadding, adjustVert(tableY, rowHeight, fontSize));
                 contentStream.showText("TEST RESULT");
                 contentStream.endText();
 
-                // Define a cor da fonte com base no status do teste APENAS para o valor
                 if (this.testStatus.equalsIgnoreCase("SUCCESS")) {
                     contentStream.setNonStrokingColor(Color.GREEN);
                 } else if (this.testStatus.equalsIgnoreCase("FAILURE")) {
                     contentStream.setNonStrokingColor(Color.RED);
                 } else {
-                    // Para "N/A" ou outros casos, mantém preto
                     contentStream.setNonStrokingColor(Color.BLACK);
                 }
 
-                // Escreve o valor do status ("SUCCESS", "FAILURE", "N/A")
                 contentStream.beginText();
                 contentStream.setFont(boldFont, fontSize);
                 contentStream.newLineAtOffset(tableX + col1Width + textPadding, adjustVert(tableY, rowHeight, fontSize));
                 contentStream.showText(this.testStatus.toUpperCase());
                 contentStream.endText();
-
-                // *** MUITO IMPORTANTE: Redefina a cor para preto após escrever o status ***
-                // Isso garante que qualquer texto futuro no PDF não herde a cor verde/vermelha.
                 contentStream.setNonStrokingColor(Color.BLACK);
-
-                // --- FIM DA ALTERAÇÃO PARA O TEST RESULT ---
-
                 contentStream.close();
+
                 document.save(this.reportFilePath);
                 System.out.println("PDF report saved and closed: " + this.reportFilePath);
 
