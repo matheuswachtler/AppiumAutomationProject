@@ -1,5 +1,6 @@
 # IntelliJ IDEA
 .idea/
+.idea/misc.xml
 *.iml
 
 # Arquivos temporários do sistema
