@@ -273,19 +273,19 @@ public class PdfReporter {
                 contentStream.beginText();
                 contentStream.setFont(boldFont, fontSize);
                 contentStream.newLineAtOffset(tableX + textPadding, adjustVert(tableY + 2 * rowHeight, rowHeight, fontSize));
-                contentStream.showText("DATA");
+                contentStream.showText("EXECUTION DATE");
                 contentStream.endText();
 
                 contentStream.beginText();
                 contentStream.setFont(boldFont, fontSize);
                 contentStream.newLineAtOffset(tableX + textPadding, adjustVert(tableY + rowHeight, rowHeight, fontSize));
-                contentStream.showText("TEMPO");
+                contentStream.showText("EXECUTION TIME");
                 contentStream.endText();
 
                 contentStream.beginText();
                 contentStream.setFont(boldFont, fontSize);
                 contentStream.newLineAtOffset(tableX + textPadding, adjustVert(tableY, rowHeight, fontSize));
-                contentStream.showText("STATUS");
+                contentStream.showText("TEST RESULT");
                 contentStream.endText();
 
                 String formattedDate = (startTime != null) ? startTime

@@ -5,10 +5,12 @@ import jdk.jfr.Description;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import utils.DriverManager;
 import utils.HooksManager;
 
-public class QA123456IT extends HooksManager {
+@ExtendWith(HooksManager.class)
+public class QA123456IT {
 
     @Test
     @DisplayName("QA123456 - Validates access to the application with valid credentials")
