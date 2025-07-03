@@ -53,7 +53,7 @@ public class PdfReporter {
             addPageWithMarginAndFooter(); // Adiciona a primeira página com margem e rodapé estático
             System.out.println("First blank page added to PDF report.");
 
-        } catch (IOException e) {
+        }catch (IOException e) {
             System.err.println("Error initializing PDF report directory or file path: " + e.getMessage());
             throw new RuntimeException("Failed to initialize PDF report", e);
         }
@@ -147,7 +147,8 @@ public class PdfReporter {
 
                 PDType1Font boldFont = new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD);
                 PDType1Font regularFont = new PDType1Font(Standard14Fonts.FontName.HELVETICA); // Nova fonte normal
-                float headerFontSize = 10;
+                float headerFontSize = 12; // Alterado para 12 para padronizar
+
                 float textPadding = 5;
 
                 contentStream.beginText();
@@ -187,7 +188,7 @@ public class PdfReporter {
             }
             System.out.println("Screenshot '" + screenshotName + "' added to PDF.");
 
-        } catch (IOException e) {
+        }catch (IOException e) {
             System.err.println("Error adding screenshot to PDF: " + e.getMessage());
         }
     }
@@ -229,8 +230,10 @@ public class PdfReporter {
 
             // Célula esquerda: "PAGE"
             contentStream.beginText();
-            // Alterado o tamanho da fonte para 12 para padronizar e removido o negrito
-            contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 12);
+            // Alterado o tamanho da fonte para 12 para padronizar e agora em negrito
+            // Instancia boldFont aqui para garantir que esteja disponível
+            PDType1Font boldFont = new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD);
+            contentStream.setFont(boldFont, 12); // Usando boldFont para "PAGE"
             // Ajustado o posicionamento vertical para o novo tamanho da fonte
             float pageTextY = pageRowY + (footerTableHeight - 12) / 2f;
             contentStream.newLineAtOffset(footerTableX + 5, pageTextY);
@@ -636,9 +639,12 @@ public class PdfReporter {
                         // Posições para o quadro "PAGE"
                         float pageRowY = margin;
                         String pageNumberText = (i + 1) + " of " + totalPageCount;
-                        float pageNumberTextWidth = footerFont.getStringWidth(pageNumberText) / 1000f * footerFontSize;
-                        // Ajustado o posicionamento horizontal para o novo tamanho da fonte
-                        float pageNumberX = footerTableX + footerCol1Width + (footerTableWidth - footerCol1Width - pageNumberTextWidth) / 2f;
+                        // Removida a linha pageNumberTextWidth se não for mais usada para cálculo de centralização
+                        // float pageNumberTextWidth = footerFont.getStringWidth(pageNumberText) / 1000f * footerFontSize;
+
+                        // Ajustado o posicionamento horizontal para alinhar à esquerda
+                        float pageNumberX = footerTableX + footerCol1Width + footerTextPadding; // Alinhado à esquerda
+
                         // Ajustado o posicionamento vertical para o novo tamanho da fonte
                         float pageTextY = pageRowY + (footerTableHeight - footerFontSize) / 2f;
 
@@ -656,7 +662,7 @@ public class PdfReporter {
                 document.save(this.reportFilePath);
                 System.out.println("PDF report saved and closed: " + this.reportFilePath);
 
-            } catch (IOException e) {
+            }catch (IOException e) {
                 System.err.println("Error saving or closing PDF report: " + e.getMessage());
             } finally {
                 if (document != null) {
