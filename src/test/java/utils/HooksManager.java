@@ -2,11 +2,12 @@ package utils;
 
 import org.apache.commons.io.output.TeeOutputStream;
 import org.junit.jupiter.api.extension.*;
-
+import jdk.jfr.Description;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.time.LocalDateTime;
+import java.lang.reflect.Method;
 
 public class HooksManager implements BeforeTestExecutionCallback, AfterTestExecutionCallback {
 
@@ -40,6 +41,12 @@ public class HooksManager implements BeforeTestExecutionCallback, AfterTestExecu
 
         PdfReporter pdfReporter = new PdfReporter(contextName, reportName, platformName.toLowerCase());
         store.put("pdfReporter", pdfReporter);
+
+        context.getElement()
+               .filter(Method.class::isInstance)
+               .map(method -> (Method) method)
+               .map(method -> method.getAnnotation(Description.class))
+               .ifPresent(descriptionAnnotation -> pdfReporter.setTestDescription(descriptionAnnotation.value()));
 
         DriverManager.initializeDriver(pdfReporter);
     }

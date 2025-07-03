@@ -15,9 +15,18 @@ public class QA123456IT {
     @Test
     @DisplayName("QA123456 - Validates access to the application with valid credentials")
     @Tag("login")
-    @Description("As a Sauce Labs user," +
-            "I want to access the system with my valid credentials,\n" +
-            "so that I can use the functionalities available after logging in.")
+    @Description(
+            "Lorem Ipsum is simply dummy text of the printing and typesetting industry.\n" +
+            "Lorem Ipsum is simply dummy text of the printing and typesetting industry.\n" +
+            "Lorem Ipsum is simply dummy text of the printing and typesetting industry.\n" +
+            "Lorem Ipsum is simply dummy text of the printing and typesetting industry.\n" +
+            "Lorem Ipsum is simply dummy text of the printing and typesetting industry.\n" +
+            "Lorem Ipsum is simply dummy text of the printing and typesetting industry.\n" +
+            "Lorem Ipsum is simply dummy text of the printing and typesetting industry.\n" +
+            "Lorem Ipsum is simply dummy text of the printing and typesetting industry.\n" +
+            "Lorem Ipsum is simply dummy text of the printing and typesetting industry.\n" +
+            "Lorem Ipsum is simply dummy text of the printing and typesetting industry.\n" )
+
     public void QA123456() throws Exception {
         LoginFunc login = new LoginFunc(DriverManager.getDriver());
 

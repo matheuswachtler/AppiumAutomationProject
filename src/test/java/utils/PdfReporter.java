@@ -26,6 +26,7 @@ public class PdfReporter {
     private LocalDateTime startTime;
     private LocalDateTime endTime;
     private String testStatus = "N/A";
+    private String testDescription = "";
 
     private static final String BASE_REPORTS_DIR = "target/pdf-reports/";
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
@@ -63,6 +64,10 @@ public class PdfReporter {
         this.testStatus = status.toUpperCase();
     }
 
+    public void setTestDescription(String description) {
+        this.testDescription = description;
+    }
+
     public void addScreenshot(byte[] screenshotBytes, String screenshotName) {
         if (document == null) {
             System.err.println("PDF document is not initialized. Cannot add screenshot.");
@@ -89,36 +94,46 @@ public class PdfReporter {
             float scaledWidth = imageWidth * finalScale;
             float scaledHeight = imageHeight * finalScale;
 
-            float rightMargin = 20;
-            float x = pageWidth - scaledWidth - rightMargin;
-            float y = (pageHeight - scaledHeight) / 2;
+            float imageRightMargin = 20;
+            float imageX = pageWidth - scaledWidth - imageRightMargin;
+            float imageY = (pageHeight - scaledHeight) / 2;
 
             try (PDPageContentStream contentStream = new PDPageContentStream(document, page)) {
+                // Definir cor e espessura para todas as linhas aqui para consistência
+                contentStream.setLineWidth(0.5f); // Espessura padrão para todas as linhas
+                contentStream.setStrokingColor(Color.BLACK); // Cor padrão para todas as linhas
+
                 float tableWidth = pageWidth - 40;
                 float tableHeight = 40;
-                float tableY = pageHeight - 60;
+                float tableY = pageHeight - 60; // Base da tabela do cabeçalho
                 float tableX = (pageWidth - tableWidth) / 2;
+
+                // Coordenadas para o topo e base da tabela do cabeçalho
+                float tableTopY = tableY + tableHeight;
+                float tableBottomY = tableY; // A base da sua tabela (parte de baixo do "STEP")
 
                 float rowHeight = tableHeight / 2;
                 float col1Width = tableWidth / 3;
+                float col2Width = tableWidth - col1Width;
 
                 PDType1Font boldFont = new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD);
                 float headerFontSize = 10;
                 float textPadding = 5;
 
-                contentStream.setLineWidth(0.5f);
-                contentStream.setStrokingColor(0, 0, 0);
-
+                // --- Desenho da tabela do cabeçalho ---
                 contentStream.addRect(tableX, tableY, tableWidth, tableHeight);
                 contentStream.stroke();
 
+                // Linha horizontal que divide SCRIPT e STEP
                 contentStream.moveTo(tableX, tableY + rowHeight);
                 contentStream.lineTo(tableX + tableWidth, tableY + rowHeight);
                 contentStream.stroke();
 
+                // Linha vertical que divide colunas
                 contentStream.moveTo(tableX + col1Width, tableY);
                 contentStream.lineTo(tableX + col1Width, tableY + tableHeight);
                 contentStream.stroke();
+                // --- Fim do desenho da tabela do cabeçalho ---
 
                 contentStream.beginText();
                 contentStream.setFont(boldFont, headerFontSize);
@@ -152,7 +167,90 @@ public class PdfReporter {
                 contentStream.showText(screenshotName.toUpperCase());
                 contentStream.endText();
 
-                contentStream.drawImage(pdImage, x, y, scaledWidth, scaledHeight);
+                contentStream.drawImage(pdImage, imageX, imageY, scaledWidth, scaledHeight);
+
+                if (!testDescription.isEmpty()) {
+                    PDType1Font descriptionFont = new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD);
+                    float descriptionFontSize = 12;
+                    float descriptionLeading = (float) (1.5 * descriptionFontSize);
+
+                    float descriptionLeftMargin = 20;
+                    float availableWidthForDescription = imageX - (descriptionLeftMargin + 10);
+
+                    float startDescriptionY = imageY + scaledHeight - (descriptionFontSize * 0.8f);
+                    float currentTextY = startDescriptionY;
+
+                    java.util.List<String> formattedLines = new java.util.ArrayList<>();
+                    String[] originalDescriptionLines = testDescription.split("\\r?\\n");
+
+                    for (String originalLine : originalDescriptionLines) {
+                        String[] words = originalLine.split(" ");
+                        StringBuilder currentLine = new StringBuilder();
+                        for (String word : words) {
+                            float projectedLineWidth = descriptionFont.getStringWidth(currentLine.toString() + " " + word) / 1000 * descriptionFontSize;
+
+                            if (projectedLineWidth > availableWidthForDescription && currentLine.length() > 0) {
+                                formattedLines.add(currentLine.toString().trim());
+                                currentLine = new StringBuilder(word).append(" ");
+                            } else {
+                                currentLine.append(word).append(" ");
+                            }
+                        }
+                        if (currentLine.length() > 0) {
+                            formattedLines.add(currentLine.toString().trim());
+                        }
+                    }
+
+                    for (String line : formattedLines) {
+                        float xStartForLine = descriptionLeftMargin;
+                        contentStream.beginText();
+                        contentStream.setFont(descriptionFont, descriptionFontSize);
+                        contentStream.newLineAtOffset(xStartForLine, currentTextY);
+                        contentStream.showText(line);
+                        contentStream.endText();
+                        currentTextY -= descriptionLeading;
+                    }
+
+                    // --- Linha separadora vertical entre descrição e print ---
+                    float lineSeparatorX = imageX - 5;
+                    float lineSeparatorStartY = imageY + scaledHeight;
+                    float lineSeparatorEndY = imageY;
+
+                    // Já usando as definições globais de cor e espessura (preto, 0.5f)
+                    contentStream.moveTo(lineSeparatorX, lineSeparatorStartY);
+                    contentStream.lineTo(lineSeparatorX, lineSeparatorEndY);
+                    contentStream.stroke();
+                    // --- Fim da linha separadora vertical ---
+                }
+
+                // --- Nova Linha de Margem Esquerda (alinhada com o cabeçalho) ---
+                float leftMarginLineX = tableX; // Alinhada com a borda esquerda da tabela
+                float bottomPageY = 30; // Margem inferior fixa
+
+                // Já usando as definições globais de cor e espessura (preto, 0.5f)
+                contentStream.moveTo(leftMarginLineX, tableTopY); // Começa no topo da tabela
+                contentStream.lineTo(leftMarginLineX, bottomPageY); // Vai até a margem inferior
+                contentStream.stroke();
+                // --- Fim da Linha de Margem Esquerda ---
+
+                // --- Nova Linha de Margem Direita (alinhada com o cabeçalho) ---
+                float rightMarginLineX = tableX + tableWidth; // Alinhada com a borda direita da tabela
+
+                // Já usando as definições globais de cor e espessura (preto, 0.5f)
+                contentStream.moveTo(rightMarginLineX, tableTopY); // Começa no topo da tabela
+                contentStream.lineTo(rightMarginLineX, bottomPageY); // Vai até a margem inferior
+                contentStream.stroke();
+                // --- Fim da Linha de Margem Direita ---
+
+                // --- Linha horizontal inferior do cabeçalho (que faltava) ---
+                // Esta linha deve ir da linha de margem esquerda até a linha de margem direita
+                // na coordenada Y da base da tabela (tableBottomY)
+                // Já usando as definições globais de cor e espessura (preto, 0.5f)
+                contentStream.moveTo(leftMarginLineX, tableBottomY);
+                contentStream.lineTo(rightMarginLineX, tableBottomY);
+                contentStream.stroke();
+                // --- Fim da linha horizontal inferior do cabeçalho ---
+
             }
             System.out.println("Screenshot '" + screenshotName + "' added to PDF.");
 
@@ -178,7 +276,7 @@ public class PdfReporter {
                     contentStream = new PDPageContentStream(document, currentPage);
                     PDType1Font logFont = new PDType1Font(Standard14Fonts.FontName.HELVETICA);
                     float logFontSize = 10;
-                    float leading = 1.8f * logFontSize;
+                    float leading = (float) (1.8 * logFontSize);
 
                     contentStream.setFont(logFont, logFontSize);
                     contentStream.setLeading(leading);
@@ -305,7 +403,6 @@ public class PdfReporter {
                 contentStream.showText(durationString);
                 contentStream.endText();
 
-
                 contentStream.beginText();
                 contentStream.setFont(boldFont, fontSize);
                 contentStream.setNonStrokingColor(Color.BLACK);
@@ -326,9 +423,10 @@ public class PdfReporter {
                 contentStream.newLineAtOffset(tableX + col1Width + textPadding, adjustVert(tableY, rowHeight, fontSize));
                 contentStream.showText(this.testStatus.toUpperCase());
                 contentStream.endText();
-                contentStream.setNonStrokingColor(Color.BLACK);
-                contentStream.close();
 
+                contentStream.setNonStrokingColor(Color.BLACK);
+
+                contentStream.close();
                 document.save(this.reportFilePath);
                 System.out.println("PDF report saved and closed: " + this.reportFilePath);
 
