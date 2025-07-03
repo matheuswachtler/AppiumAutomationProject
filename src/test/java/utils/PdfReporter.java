@@ -101,7 +101,6 @@ public class PdfReporter {
 
                 float rowHeight = tableHeight / 2;
                 float col1Width = tableWidth / 3;
-                float col2Width = tableWidth - col1Width;
 
                 PDType1Font boldFont = new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD);
                 float headerFontSize = 10;
