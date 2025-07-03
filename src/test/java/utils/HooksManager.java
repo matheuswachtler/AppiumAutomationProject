@@ -3,6 +3,7 @@ package utils;
 import org.apache.commons.io.output.TeeOutputStream;
 import org.junit.jupiter.api.extension.*;
 import jdk.jfr.Description;
+import org.junit.jupiter.api.DisplayName; // Importar DisplayName
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -35,12 +36,30 @@ public class HooksManager implements BeforeTestExecutionCallback, AfterTestExecu
         store.put("baos", baos);
 
         String contextName = context.getTags().stream().findFirst().orElse("general");
+
+        // --- Lógica de extração do Display Name ---
         String fullDisplayName = context.getDisplayName();
-        String reportName = fullDisplayName.split(" - ")[0].replaceAll("[^a-zA-Z0-9.-]", "_");
+        String testCode = fullDisplayName; // Valor padrão: o display name completo
+        String descriptiveTestName = fullDisplayName; // Valor padrão: o display name completo
+
+        int dashIndex = fullDisplayName.indexOf(" - ");
+        if (dashIndex != -1) {
+            testCode = fullDisplayName.substring(0, dashIndex);
+            descriptiveTestName = fullDisplayName.substring(dashIndex + 3);
+        }
+        // --- Fim da lógica de extração do Display Name ---
+
+        String reportFileName = testCode.replaceAll("[^a-zA-Z0-9.-]", "_");
         String platformName = ConfigReader.getProperty("platform.name");
 
-        PdfReporter pdfReporter = new PdfReporter(contextName, reportName, platformName.toLowerCase());
+        PdfReporter pdfReporter = new PdfReporter(contextName, reportFileName, platformName.toLowerCase());
         store.put("pdfReporter", pdfReporter);
+
+        // Passa o nome descritivo para o PdfReporter
+        pdfReporter.setTestName(descriptiveTestName);
+
+        // NOVO: Passa o código do teste para o novo campo no PdfReporter
+        pdfReporter.setNewInfoFieldContent(testCode); // <--- ALTERAÇÃO AQUI
 
         context.getElement()
                .filter(Method.class::isInstance)

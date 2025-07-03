@@ -13,19 +13,16 @@ import utils.HooksManager;
 public class QA123456IT {
 
     @Test
-    @DisplayName("QA123456 - Validates access to the application with valid credentials")
+    @DisplayName("QA123459 - Lorem Ipsum is simply dummy text of the printing ")
     @Tag("login")
     @Description(
-            "Lorem Ipsum is simply dummy text of the printing and typesetting industry.\n" +
-            "Lorem Ipsum is simply dummy text of the printing and typesetting industry.\n" +
-            "Lorem Ipsum is simply dummy text of the printing and typesetting industry.\n" +
-            "Lorem Ipsum is simply dummy text of the printing and typesetting industry.\n" +
-            "Lorem Ipsum is simply dummy text of the printing and typesetting industry.\n" +
-            "Lorem Ipsum is simply dummy text of the printing and typesetting industry.\n" +
-            "Lorem Ipsum is simply dummy text of the printing and typesetting industry.\n" +
-            "Lorem Ipsum is simply dummy text of the printing and typesetting industry.\n" +
-            "Lorem Ipsum is simply dummy text of the printing and typesetting industry.\n" +
-            "Lorem Ipsum is simply dummy text of the printing and typesetting industry.\n" )
+            """
+                    Lorem Ipsum is simply dummy text of the printing and printing dummy simply
+                    Lorem Ipsum is simply dummy text of the printing and printing dummy simply
+                    Lorem Ipsum is simply dummy text of the printing and printing dummy simply
+                    Lorem Ipsum is simply dummy text of the printing and printing dummy simply
+                    Lorem Ipsum is simply dummy text of the printing and printing dummy simply
+            """)
 
     public void QA123456() throws Exception {
         LoginFunc login = new LoginFunc(DriverManager.getDriver());
