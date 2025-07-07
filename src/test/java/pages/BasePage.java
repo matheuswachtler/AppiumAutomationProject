@@ -8,7 +8,7 @@ import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.OutputType;
-import utils.PdfReporter;
+import utils.report.PdfReporter;
 import utils.DriverManager;
 
 import java.time.Duration;

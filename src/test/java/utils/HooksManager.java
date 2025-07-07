@@ -3,7 +3,9 @@ package utils;
 import org.apache.commons.io.output.TeeOutputStream;
 import org.junit.jupiter.api.extension.*;
 import jdk.jfr.Description;
-import org.junit.jupiter.api.DisplayName;
+import utils.report.PdfReporter;
+import utils.report.TestReportData;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -55,15 +57,17 @@ public class HooksManager implements BeforeTestExecutionCallback, AfterTestExecu
         PdfReporter pdfReporter = new PdfReporter(contextName, reportFileName, platformName.toLowerCase());
         store.put("pdfReporter", pdfReporter);
 
-        pdfReporter.setTestName(descriptiveTestName);
-        pdfReporter.setNewInfoFieldContent(testCode);
+        TestReportData reportData = pdfReporter.getReportData();
+
+        reportData.setTestName(descriptiveTestName);
+        reportData.setNewInfoFieldContent(testCode);
 
         String gitUserName = getGitConfig("user.name");
         if (gitUserName != null && !gitUserName.isEmpty()) {
-            pdfReporter.setResponsibleContent(gitUserName.toUpperCase());
+            reportData.setResponsibleContent(gitUserName.toUpperCase());
         } else {
             String systemUserName = System.getProperty("user.name");
-            pdfReporter.setResponsibleContent(systemUserName != null ? systemUserName.toUpperCase() : "N/A");
+            reportData.setResponsibleContent(systemUserName != null ? systemUserName.toUpperCase() : "N/A");
             System.err.println("Could not get Git user.name. Falling back to system user.name: " + (systemUserName != null ? systemUserName : "N/A"));
         }
 
@@ -71,7 +75,7 @@ public class HooksManager implements BeforeTestExecutionCallback, AfterTestExecu
                .filter(Method.class::isInstance)
                .map(method -> (Method) method)
                .map(method -> method.getAnnotation(Description.class))
-               .ifPresent(descriptionAnnotation -> pdfReporter.setTestDescription(descriptionAnnotation.value()));
+               .ifPresent(descriptionAnnotation -> reportData.setTestDescription(descriptionAnnotation.value()));
 
         DriverManager.initializeDriver(pdfReporter);
     }
@@ -104,9 +108,11 @@ public class HooksManager implements BeforeTestExecutionCallback, AfterTestExecu
 
         PdfReporter pdfReporter = store.remove("pdfReporter", PdfReporter.class);
         if (pdfReporter != null) {
-            pdfReporter.setLogsContent(capturedLogs);
-            pdfReporter.setExecutionTimes(testStartTime, testEndTime);
-            pdfReporter.setTestStatus(finalTestStatus);
+            TestReportData reportData = pdfReporter.getReportData();
+
+            reportData.setLogsContent(capturedLogs);
+            reportData.setExecutionTimes(testStartTime, testEndTime);
+            reportData.setTestStatus(finalTestStatus);
             pdfReporter.closeReport();
         }
 
