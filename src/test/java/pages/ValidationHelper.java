@@ -9,7 +9,7 @@ public class ValidationHelper extends BasePage {
         super(driver);
     }
 
-    public ValidationHelper assertTextsPresent(String... textsToValidate) {
+    public void assertTextsPresent(String... textsToValidate) {
         for (String text : textsToValidate) {
             if (text == null) {
                 System.err.println("Warning: A null text was passed for validation. Ignoring.");
@@ -17,12 +17,12 @@ public class ValidationHelper extends BasePage {
             }
 
             try {
-                System.out.println(String.format("Waiting for text '%s' to appear on the screen...", text));
+                System.out.println("Waiting for text '" + text + "' to appear on the screen...");
                 wait.until(driver -> {
                     String pageSource = driver.getPageSource();
                     return pageSource != null && pageSource.contains(text);
                 });
-                System.out.println(String.format("Validation successful: Text '%s' was found on the screen.", text));
+                System.out.println("Validation successful: Text '" + text + "' was found on the screen.");
             } catch (TimeoutException e) {
                 String errorMessage = String.format(
                         "Validation failed: Text '%s' was not found on the screen after %d seconds.",
@@ -39,6 +39,5 @@ public class ValidationHelper extends BasePage {
             }
         }
         System.out.println("Validation successful: All expected texts were found.");
-        return this;
     }
 }

@@ -17,6 +17,7 @@ import java.io.InputStreamReader;
 public class HooksManager implements BeforeTestExecutionCallback, AfterTestExecutionCallback {
 
     private static final ExtensionContext.Namespace NAMESPACE = ExtensionContext.Namespace.create(HooksManager.class);
+    private static final String GIT_USER_NAME_CONFIG_KEY = "user.name";
 
     @Override
     public void beforeTestExecution(ExtensionContext context) {
@@ -27,17 +28,17 @@ public class HooksManager implements BeforeTestExecutionCallback, AfterTestExecu
 
         PrintStream oldOut = System.out;
         PrintStream oldErr = System.err;
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
 
-        TeeOutputStream teeOut = new TeeOutputStream(oldOut, baos);
-        TeeOutputStream teeErr = new TeeOutputStream(oldErr, baos);
+        TeeOutputStream teeOut = new TeeOutputStream(oldOut, byteArrayOutputStream);
+        TeeOutputStream teeErr = new TeeOutputStream(oldErr, byteArrayOutputStream);
 
         System.setOut(new PrintStream(teeOut, true));
         System.setErr(new PrintStream(teeErr, true));
 
         store.put("oldOut", oldOut);
         store.put("oldErr", oldErr);
-        store.put("baos", baos);
+        store.put("byteArrayOutputStream", byteArrayOutputStream);
 
         String contextName = context.getTags().stream().findFirst().orElse("general");
 
@@ -62,7 +63,7 @@ public class HooksManager implements BeforeTestExecutionCallback, AfterTestExecu
         reportData.setTestName(descriptiveTestName);
         reportData.setNewInfoFieldContent(testCode);
 
-        String gitUserName = getGitConfig("user.name");
+        String gitUserName = getGitConfig();
         if (gitUserName != null && !gitUserName.isEmpty()) {
             reportData.setResponsibleContent(gitUserName.toUpperCase());
         } else {
@@ -95,12 +96,12 @@ public class HooksManager implements BeforeTestExecutionCallback, AfterTestExecu
 
         PrintStream oldOut = store.remove("oldOut", PrintStream.class);
         PrintStream oldErr = store.remove("oldErr", PrintStream.class);
-        ByteArrayOutputStream baos = store.remove("baos", ByteArrayOutputStream.class);
+        ByteArrayOutputStream byteArrayOutputStream = store.remove("byteArrayOutputStream", ByteArrayOutputStream.class);
 
         if (oldOut != null) System.setOut(oldOut);
         if (oldErr != null) System.setErr(oldErr);
 
-        String capturedLogs = baos != null ? baos.toString() : "";
+        String capturedLogs = byteArrayOutputStream != null ? byteArrayOutputStream.toString() : "";
         if (oldOut != null) oldOut.println(capturedLogs);
 
         LocalDateTime testStartTime = store.remove("testStartTime", LocalDateTime.class);
@@ -117,15 +118,15 @@ public class HooksManager implements BeforeTestExecutionCallback, AfterTestExecu
         }
 
         try {
-            if (baos != null) baos.close();
+            if (byteArrayOutputStream != null) byteArrayOutputStream.close();
         } catch (IOException e) {
             System.err.println("Error closing ByteArrayOutputStream: " + e.getMessage());
         }
     }
 
-    private String getGitConfig(String configKey) {
+    private String getGitConfig() {
         try {
-            ProcessBuilder processBuilder = new ProcessBuilder("git", "config", configKey);
+            ProcessBuilder processBuilder = new ProcessBuilder("git", "config", GIT_USER_NAME_CONFIG_KEY);
             processBuilder.redirectErrorStream(true);
             Process process = processBuilder.start();
 
@@ -140,12 +141,12 @@ public class HooksManager implements BeforeTestExecutionCallback, AfterTestExecu
             if (exitCode == 0) {
                 return output.toString().trim();
             } else {
-                System.err.println("Git command 'git config " + configKey + "' failed with exit code: " + exitCode);
-                System.err.println("Git command output: " + output.toString());
+                System.err.println("Git command 'git config " + GIT_USER_NAME_CONFIG_KEY + "' failed with exit code: " + exitCode);
+                System.err.println("Git command output: " + output);
                 return null;
             }
         } catch (IOException | InterruptedException e) {
-            System.err.println("Error executing git command 'git config " + configKey + "': " + e.getMessage());
+            System.err.println("Error executing git command 'git config " + GIT_USER_NAME_CONFIG_KEY + "': " + e.getMessage());
             return null;
         }
     }

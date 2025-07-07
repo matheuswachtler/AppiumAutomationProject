@@ -2,19 +2,18 @@ package utils.report;
 
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
-import org.apache.pdfbox.pdmodel.PDPageContentStream;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
-import org.apache.pdfbox.pdmodel.font.PDType1Font;
-import org.apache.pdfbox.pdmodel.font.Standard14Fonts;
-import java.awt.Color;
+import org.apache.pdfbox.pdmodel.PDPageContentStream;
 
+import java.awt.Color;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+
 import utils.report.drawing.PdfTableDrawer;
 import utils.report.drawing.PdfPageTemplate;
 import utils.report.drawing.PdfLogWriter;
@@ -46,9 +45,8 @@ public class PdfReporter {
             System.out.println("PDF report initialized at: " + this.reportFilePath);
 
             pdfPageTemplate.addPageWithMarginAndFooter(document);
-            System.out.println("First blank page added to PDF report.");
 
-        }catch (IOException e) {
+        } catch (IOException e) {
             System.err.println("Error initializing PDF report directory or file path: " + e.getMessage());
             throw new RuntimeException("Failed to initialize PDF report", e);
         }
@@ -64,9 +62,8 @@ public class PdfReporter {
             return;
         }
 
-        PDImageXObject pdImage = null;
         try {
-            pdImage = PDImageXObject.createFromByteArray(document, screenshotBytes, screenshotName);
+            PDImageXObject pdImage = PDImageXObject.createFromByteArray(document, screenshotBytes, screenshotName);
 
             PDPage page = pdfPageTemplate.addPageWithMarginAndFooter(document);
 
@@ -99,7 +96,7 @@ public class PdfReporter {
             }
             System.out.println("Screenshot '" + screenshotName + "' added to PDF.");
 
-        }catch (IOException e) {
+        } catch (IOException e) {
             System.err.println("Error adding screenshot to PDF: " + e.getMessage());
         }
     }
@@ -117,7 +114,7 @@ public class PdfReporter {
                 document.save(this.reportFilePath);
                 System.out.println("PDF report saved and closed: " + this.reportFilePath);
 
-            }catch (IOException e) {
+            } catch (IOException e) {
                 System.err.println("Error saving or closing PDF report: " + e.getMessage());
             } finally {
                 if (document != null) {

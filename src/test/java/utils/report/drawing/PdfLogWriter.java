@@ -23,11 +23,10 @@ public class PdfLogWriter {
             return;
         }
 
-        PDPage currentPage = null;
+        PDPage currentPage = pageTemplate.addPageWithMarginAndFooter(document);
         PDPageContentStream contentStream = null;
 
         try {
-            currentPage = pageTemplate.addPageWithMarginAndFooter(document);
             contentStream = new PDPageContentStream(document, currentPage, PDPageContentStream.AppendMode.APPEND, true, true);
 
             PDType1Font logFont = new PDType1Font(Standard14Fonts.FontName.HELVETICA);

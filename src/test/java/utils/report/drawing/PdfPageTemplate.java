@@ -31,23 +31,21 @@ public class PdfPageTemplate {
             contentStream.addRect(MARGIN, MARGIN, pageWidth - (2 * MARGIN), newPage.getMediaBox().getHeight() - (2 * MARGIN));
             contentStream.stroke();
 
-            float footerTableX = MARGIN;
             float footerTableWidth = pageWidth - (2 * MARGIN);
             float footerCol1Width = footerTableWidth * 0.25f;
 
-            float pageRowY = MARGIN;
-            contentStream.addRect(footerTableX, pageRowY, footerTableWidth, FOOTER_TABLE_HEIGHT);
+            contentStream.addRect(MARGIN, MARGIN, footerTableWidth, FOOTER_TABLE_HEIGHT);
             contentStream.stroke();
 
-            contentStream.moveTo(footerTableX + footerCol1Width, pageRowY);
-            contentStream.lineTo(footerTableX + footerCol1Width, pageRowY + FOOTER_TABLE_HEIGHT);
+            contentStream.moveTo(MARGIN + footerCol1Width, MARGIN);
+            contentStream.lineTo(MARGIN + footerCol1Width, MARGIN + FOOTER_TABLE_HEIGHT);
             contentStream.stroke();
 
             contentStream.beginText();
             PDType1Font boldFont = new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD);
             contentStream.setFont(boldFont, FOOTER_FONT_SIZE);
-            float pageTextY = pageRowY + (FOOTER_TABLE_HEIGHT - FOOTER_FONT_SIZE) / 2f;
-            contentStream.newLineAtOffset(footerTableX + FOOTER_TEXT_PADDING, pageTextY);
+            float pageTextY = MARGIN + (FOOTER_TABLE_HEIGHT - FOOTER_FONT_SIZE) / 2f;
+            contentStream.newLineAtOffset(MARGIN + FOOTER_TEXT_PADDING, pageTextY);
             contentStream.showText("PAGE");
             contentStream.endText();
         }
@@ -61,15 +59,13 @@ public class PdfPageTemplate {
             PDPage page = document.getPage(i);
             try (PDPageContentStream footerContentStream = new PDPageContentStream(document, page, PDPageContentStream.AppendMode.APPEND, true, true)) {
                 float pageWidth = page.getMediaBox().getWidth();
-                float footerTableX = MARGIN;
                 float footerTableWidth = pageWidth - (2 * MARGIN);
                 float footerCol1Width = footerTableWidth * 0.25f;
 
-                float pageRowY = MARGIN;
                 String pageNumberText = (i + 1) + " of " + totalPageCount;
 
-                float pageNumberX = footerTableX + footerCol1Width + FOOTER_TEXT_PADDING;
-                float pageTextY = pageRowY + (FOOTER_TABLE_HEIGHT - FOOTER_FONT_SIZE) / 2f;
+                float pageNumberX = MARGIN + footerCol1Width + FOOTER_TEXT_PADDING;
+                float pageTextY = MARGIN + (FOOTER_TABLE_HEIGHT - FOOTER_FONT_SIZE) / 2f;
 
                 footerContentStream.beginText();
                 footerContentStream.setFont(FOOTER_FONT, FOOTER_FONT_SIZE);

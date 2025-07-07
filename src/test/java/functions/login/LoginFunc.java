@@ -7,7 +7,7 @@ import pages.login.LoginPage;
 
 public class LoginFunc {
 
-    private AndroidDriver driver;
+    private final AndroidDriver driver;
 
     public LoginFunc(AndroidDriver driver) {
         this.driver = driver;

@@ -10,7 +10,7 @@ public class TestReportData {
     private LocalDateTime startTime;
     private LocalDateTime endTime;
     private String testStatus = "N/A";
-    private String testName = "";
+    private String testName;
     private String testDescription = "";
     private String newInfoFieldContent = "N/A";
     private String responsibleContent = "N/A";
@@ -28,14 +28,6 @@ public class TestReportData {
 
     public String getLogsContent() {
         return logsContent;
-    }
-
-    public LocalDateTime getStartTime() {
-        return startTime;
-    }
-
-    public LocalDateTime getEndTime() {
-        return endTime;
     }
 
     public String getTestStatus() {
