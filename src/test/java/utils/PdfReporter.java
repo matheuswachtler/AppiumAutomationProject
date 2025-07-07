@@ -321,8 +321,8 @@ public class PdfReporter {
                 PDType1Font boldFont = new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD);
                 PDType1Font regularFont = new PDType1Font(Standard14Fonts.FontName.HELVETICA); // Nova fonte normal
 
-                float fontSize = 12;
-                float textPadding = 10;
+                float fontSize = 12; // Tamanho da fonte para os rótulos (esquerda)
+                float textPadding = 5; // Espaçamento interno da célula
 
                 float pageMargin = 30;
                 float pageCurrentWidth = summaryPage.getMediaBox().getWidth();
@@ -330,14 +330,19 @@ public class PdfReporter {
 
                 float tableX = pageMargin;
                 float tableWidth = pageCurrentWidth - (2 * pageMargin);
-                float col1Width = tableWidth * 0.25f;
+                float col1Width = tableWidth * 0.25f; // Largura da coluna dos rótulos (esquerda)
 
-                PDType1Font testNameContentFont = new PDType1Font(Standard14Fonts.FontName.HELVETICA);
-                float testNameContentFontSize = 10;
-                float testNameLineLeading = testNameContentFontSize * 1.2f;
+                // Fontes e tamanhos para o conteúdo (coluna direita)
+                PDType1Font contentFont = new PDType1Font(Standard14Fonts.FontName.HELVETICA);
+                float contentFontSize = 10;
+                float lineLeading = contentFontSize * 1.2f; // Espaçamento entre linhas para conteúdo multilinhas
 
+                // Alturas de ascensão para cálculo de posicionamento vertical (para top-alignment)
+                float labelAscent = boldFont.getFontDescriptor().getAscent() / 1000f * fontSize;
+                float contentAscent = contentFont.getFontDescriptor().getAscent() / 1000f * contentFontSize;
+
+                // --- Cálculo da altura para TEST NAME ---
                 float availableWidthForTestNameText = tableWidth - col1Width - (2 * textPadding);
-
                 java.util.List<String> formattedTestNameLines = new java.util.ArrayList<>();
                 String testNameToFormat = (this.testTestName != null && !this.testTestName.isEmpty()) ?
                         this.testTestName : "N/A";
@@ -348,7 +353,7 @@ public class PdfReporter {
                     String[] words = testNameToFormat.split(" ");
                     StringBuilder currentLine = new StringBuilder();
                     for (String word : words) {
-                        float projectedWidth = testNameContentFont.getStringWidth(currentLine.toString() + " " + word) / 1000f * testNameContentFontSize;
+                        float projectedWidth = contentFont.getStringWidth(currentLine.toString() + " " + word) / 1000f * contentFontSize;
                         if (projectedWidth > availableWidthForTestNameText && currentLine.length() > 0) {
                             formattedTestNameLines.add(currentLine.toString().trim());
                             currentLine = new StringBuilder(word).append(" ");
@@ -360,7 +365,7 @@ public class PdfReporter {
                         formattedTestNameLines.add(currentLine.toString().trim());
                     }
                 }
-                float testNameContentHeight = formattedTestNameLines.size() * testNameLineLeading;
+                float testNameContentHeight = formattedTestNameLines.size() * lineLeading; // Usa lineLeading
                 float standardFixedRowHeight = 20f;
 
                 float testNameCellActualHeight;
@@ -369,16 +374,15 @@ public class PdfReporter {
                 } else {
                     testNameCellActualHeight = testNameContentHeight + (2 * textPadding);
                 }
+                if (testNameCellActualHeight < standardFixedRowHeight) { // Garante uma altura mínima
+                    testNameCellActualHeight = standardFixedRowHeight;
+                }
 
-                PDType1Font descriptionContentFont = new PDType1Font(Standard14Fonts.FontName.HELVETICA);
-                float descriptionContentFontSize = 10;
-                float descriptionLineLeading = descriptionContentFontSize * 1.2f;
-
+                // --- Cálculo da altura para DESCRIPTION ---
                 float availableWidthForDescriptionText = tableWidth - col1Width - (2 * textPadding);
-
                 java.util.List<String> formattedDescriptionLines = new java.util.ArrayList<>();
                 String descriptionToFormat = (this.testDescription != null && !this.testDescription.isEmpty()) ?
-                        this.testDescription.replaceAll("[\\n\\r\\t]", "") : "N/A";
+                        this.testDescription.replaceAll("[\\n\\r\\t]", " ") : "N/A";
 
                 if ("N/A".equals(descriptionToFormat)) {
                     formattedDescriptionLines.add("N/A");
@@ -386,12 +390,15 @@ public class PdfReporter {
                     String[] words = descriptionToFormat.split(" ");
                     StringBuilder currentLine = new StringBuilder();
                     for (String word : words) {
-                        float projectedWidth = descriptionContentFont.getStringWidth(currentLine.toString() + " " + word) / 1000f * descriptionContentFontSize;
+                        float projectedWidth = contentFont.getStringWidth(currentLine.toString() + (currentLine.length() > 0 ? " " : "") + word) / 1000f * contentFontSize;
                         if (projectedWidth > availableWidthForDescriptionText && currentLine.length() > 0) {
                             formattedDescriptionLines.add(currentLine.toString().trim());
-                            currentLine = new StringBuilder(word).append(" ");
+                            currentLine = new StringBuilder(word);
                         } else {
-                            currentLine.append(word).append(" ");
+                            if (currentLine.length() > 0) {
+                                currentLine.append(" ");
+                            }
+                            currentLine.append(word);
                         }
                     }
                     if (currentLine.length() > 0) {
@@ -399,12 +406,15 @@ public class PdfReporter {
                     }
                 }
 
-                float descriptionContentHeight = formattedDescriptionLines.size() * descriptionLineLeading;
+                float descriptionContentHeight = formattedDescriptionLines.size() * lineLeading; // Usa lineLeading
                 float descriptionCellActualHeight;
                 if (formattedDescriptionLines.size() <= 1) {
                     descriptionCellActualHeight = standardFixedRowHeight;
                 } else {
                     descriptionCellActualHeight = descriptionContentHeight + (2 * textPadding);
+                }
+                if (descriptionCellActualHeight < standardFixedRowHeight) {
+                    descriptionCellActualHeight = standardFixedRowHeight;
                 }
 
                 float testCodeRowHeight = standardFixedRowHeight;
@@ -420,19 +430,10 @@ public class PdfReporter {
                 contentStream.addRect(tableX, tableY, tableWidth, summaryTableHeight);
                 contentStream.stroke();
 
+                // Desenha as linhas horizontais da tabela de baixo para cima
                 contentStream.moveTo(tableX, tableY + descriptionCellActualHeight);
                 contentStream.lineTo(tableX + tableWidth, tableY + descriptionCellActualHeight);
                 contentStream.stroke();
-
-                // Linha que separa EXECUTION DATE e EXECUTION TIME
-                contentStream.moveTo(tableX, tableY + summaryTableHeight - standardFixedRowHeight);
-                contentStream.lineTo(tableX + tableWidth, tableY + summaryTableHeight - standardFixedRowHeight);
-                contentStream.stroke();
-
-                contentStream.moveTo(tableX, tableY + summaryTableHeight - (2 * standardFixedRowHeight)); // Linha entre EXECUTION TIME e TEST RESULT
-                contentStream.lineTo(tableX + tableWidth, tableY + summaryTableHeight - (2 * standardFixedRowHeight));
-                contentStream.stroke();
-
 
                 contentStream.moveTo(tableX, tableY + descriptionCellActualHeight + testNameCellActualHeight);
                 contentStream.lineTo(tableX + tableWidth, tableY + descriptionCellActualHeight + testNameCellActualHeight);
@@ -446,17 +447,30 @@ public class PdfReporter {
                 contentStream.lineTo(tableX + tableWidth, tableY + descriptionCellActualHeight + testNameCellActualHeight + testCodeRowHeight + responsibleRowHeight);
                 contentStream.stroke();
 
-                contentStream.moveTo(tableX, tableY + descriptionCellActualHeight + testNameCellActualHeight + testCodeRowHeight + responsibleRowHeight + standardFixedRowHeight);
-                contentStream.lineTo(tableX + tableWidth, tableY + descriptionCellActualHeight + testNameCellActualHeight + testCodeRowHeight + responsibleRowHeight + standardFixedRowHeight);
+                contentStream.moveTo(tableX, tableY + summaryTableHeight - (3 * standardFixedRowHeight));
+                contentStream.lineTo(tableX + tableWidth, tableY + summaryTableHeight - (3 * standardFixedRowHeight));
+                contentStream.stroke();
+
+                contentStream.moveTo(tableX, tableY + summaryTableHeight - (2 * standardFixedRowHeight));
+                contentStream.lineTo(tableX + tableWidth, tableY + summaryTableHeight - (2 * standardFixedRowHeight));
+                contentStream.stroke();
+
+                contentStream.moveTo(tableX, tableY + summaryTableHeight - standardFixedRowHeight);
+                contentStream.lineTo(tableX + tableWidth, tableY + summaryTableHeight - standardFixedRowHeight);
                 contentStream.stroke();
 
                 contentStream.moveTo(tableX + col1Width, tableY);
                 contentStream.lineTo(tableX + col1Width, tableY + summaryTableHeight);
                 contentStream.stroke();
 
+
+                // --- Preenchimento das células (rótulos e conteúdo) ---
+
+                // EXECUTION DATE (Fixed Height, Centered)
+                float execDateRowBottomY = tableY + summaryTableHeight - standardFixedRowHeight;
                 contentStream.beginText();
                 contentStream.setFont(boldFont, fontSize);
-                float execDateLabelY = adjustVert(tableY + summaryTableHeight - standardFixedRowHeight, standardFixedRowHeight, fontSize);
+                float execDateLabelY = adjustVert(execDateRowBottomY, standardFixedRowHeight, fontSize);
                 contentStream.newLineAtOffset(tableX + textPadding, execDateLabelY);
                 contentStream.showText("EXECUTION DATE");
                 contentStream.endText();
@@ -466,15 +480,17 @@ public class PdfReporter {
                         .toUpperCase() : "N/A";
 
                 contentStream.beginText();
-                contentStream.setFont(descriptionContentFont, descriptionContentFontSize);
-                float execDateContentY = adjustVert(tableY + summaryTableHeight - standardFixedRowHeight, standardFixedRowHeight, descriptionContentFontSize);
+                contentStream.setFont(contentFont, contentFontSize);
+                float execDateContentY = adjustVert(execDateRowBottomY, standardFixedRowHeight, contentFontSize);
                 contentStream.newLineAtOffset(tableX + col1Width + textPadding, execDateContentY);
                 contentStream.showText(formattedDate);
                 contentStream.endText();
 
+                // EXECUTION TIME (Fixed Height, Centered)
+                float execTimeRowBottomY = tableY + summaryTableHeight - (2 * standardFixedRowHeight);
                 contentStream.beginText();
                 contentStream.setFont(boldFont, fontSize);
-                float execTimeLabelY = adjustVert(tableY + summaryTableHeight - (2 * standardFixedRowHeight), standardFixedRowHeight, fontSize);
+                float execTimeLabelY = adjustVert(execTimeRowBottomY, standardFixedRowHeight, fontSize);
                 contentStream.newLineAtOffset(tableX + textPadding, execTimeLabelY);
                 contentStream.showText("EXECUTION TIME");
                 contentStream.endText();
@@ -487,16 +503,18 @@ public class PdfReporter {
                 }
 
                 contentStream.beginText();
-                contentStream.setFont(descriptionContentFont, descriptionContentFontSize);
-                float execTimeContentY = adjustVert(tableY + summaryTableHeight - (2 * standardFixedRowHeight), standardFixedRowHeight, descriptionContentFontSize);
+                contentStream.setFont(contentFont, contentFontSize);
+                float execTimeContentY = adjustVert(execTimeRowBottomY, standardFixedRowHeight, contentFontSize);
                 contentStream.newLineAtOffset(tableX + col1Width + textPadding, execTimeContentY);
                 contentStream.showText(durationString);
                 contentStream.endText();
 
+                // TEST RESULT (Fixed Height, Centered)
+                float testResultRowBottomY = tableY + summaryTableHeight - (3 * standardFixedRowHeight);
                 contentStream.beginText();
                 contentStream.setFont(boldFont, fontSize);
                 contentStream.setNonStrokingColor(Color.BLACK);
-                float testResultLabelY = adjustVert(tableY + summaryTableHeight - (3 * standardFixedRowHeight), standardFixedRowHeight, fontSize);
+                float testResultLabelY = adjustVert(testResultRowBottomY, standardFixedRowHeight, fontSize);
                 contentStream.newLineAtOffset(tableX + textPadding, testResultLabelY);
                 contentStream.showText("TEST RESULT");
                 contentStream.endText();
@@ -510,110 +528,112 @@ public class PdfReporter {
                 }
 
                 contentStream.beginText();
-                contentStream.setFont(descriptionContentFont, descriptionContentFontSize);
-                float testResultContentY = adjustVert(tableY + summaryTableHeight - (3 * standardFixedRowHeight), standardFixedRowHeight, descriptionContentFontSize);
+                contentStream.setFont(contentFont, contentFontSize);
+                float testResultContentY = adjustVert(testResultRowBottomY, standardFixedRowHeight, contentFontSize);
                 contentStream.newLineAtOffset(tableX + col1Width + textPadding, testResultContentY);
                 contentStream.showText(this.testStatus.toUpperCase());
                 contentStream.endText();
                 contentStream.setNonStrokingColor(Color.BLACK);
 
+                // RESPONSIBLE (Fixed Height, Centered)
+                float responsibleRowBottomY = tableY + descriptionCellActualHeight + testNameCellActualHeight + testCodeRowHeight; // Bottom Y of the RESPONSIBLE row
                 contentStream.beginText();
                 contentStream.setFont(boldFont, fontSize);
-                float responsibleLabelY = adjustVert(tableY + descriptionCellActualHeight + testNameCellActualHeight + testCodeRowHeight, responsibleRowHeight, fontSize);
+                float responsibleLabelY = adjustVert(responsibleRowBottomY, responsibleRowHeight, fontSize);
                 contentStream.newLineAtOffset(tableX + textPadding, responsibleLabelY);
                 contentStream.showText("RESPONSIBLE");
                 contentStream.endText();
 
                 contentStream.beginText();
-                contentStream.setFont(descriptionContentFont, descriptionContentFontSize);
-                float responsibleContentY = adjustVert(tableY + descriptionCellActualHeight + testNameCellActualHeight + testCodeRowHeight, responsibleRowHeight, descriptionContentFontSize);
+                contentStream.setFont(contentFont, contentFontSize);
+                float responsibleContentY = adjustVert(responsibleRowBottomY, responsibleRowHeight, contentFontSize);
                 contentStream.newLineAtOffset(tableX + col1Width + textPadding, responsibleContentY);
                 contentStream.showText(this.responsibleContent);
                 contentStream.endText();
 
+                // SCRIPT (Fixed Height, Centered)
+                float scriptRowBottomY = tableY + descriptionCellActualHeight + testNameCellActualHeight; // Bottom Y of the SCRIPT row
                 contentStream.beginText();
                 contentStream.setFont(boldFont, fontSize);
-                float testCodeLabelY = adjustVert(tableY + descriptionCellActualHeight + testNameCellActualHeight, testCodeRowHeight, fontSize);
+                float testCodeLabelY = adjustVert(scriptRowBottomY, testCodeRowHeight, fontSize);
                 contentStream.newLineAtOffset(tableX + textPadding, testCodeLabelY);
                 contentStream.showText("SCRIPT");
                 contentStream.endText();
 
                 contentStream.beginText();
-                contentStream.setFont(descriptionContentFont, descriptionContentFontSize);
-                float testCodeContentY = adjustVert(tableY + descriptionCellActualHeight + testNameCellActualHeight, testCodeRowHeight, descriptionContentFontSize);
+                contentStream.setFont(contentFont, contentFontSize);
+                float testCodeContentY = adjustVert(scriptRowBottomY, testCodeRowHeight, contentFontSize);
                 contentStream.newLineAtOffset(tableX + col1Width + textPadding, testCodeContentY);
                 contentStream.showText(this.newInfoFieldContent);
                 contentStream.endText();
 
+                // TEST NAME (Dynamic Height, Top-aligned for content, label adjusted for single/multi-line)
+                float testNameRowTopY = tableY + descriptionCellActualHeight + testNameCellActualHeight;
+                float testNameRowBottomY = tableY + descriptionCellActualHeight;
                 contentStream.beginText();
                 contentStream.setFont(boldFont, fontSize);
                 float testNameLabelY;
-                float testNameCellBottomY = tableY + descriptionCellActualHeight;
-                float testNameCellTopY = testNameCellBottomY + testNameCellActualHeight;
-
-                if (formattedTestNameLines.size() <= 1) {
-                    testNameLabelY = adjustVert(testNameCellBottomY, testNameCellActualHeight, fontSize);
-                } else {
-                    testNameLabelY = testNameCellTopY - textPadding - (boldFont.getFontDescriptor().getAscent() / 1000f * fontSize);
+                if (formattedTestNameLines.size() <= 1) { // If single line, center label within standard height
+                    testNameLabelY = adjustVert(testNameRowBottomY, testNameCellActualHeight, fontSize);
+                } else { // If multi-line, top-align label
+                    testNameLabelY = testNameRowTopY - textPadding - labelAscent;
                 }
                 contentStream.newLineAtOffset(tableX + textPadding, testNameLabelY);
                 contentStream.showText("TEST NAME");
                 contentStream.endText();
 
-                contentStream.setFont(testNameContentFont, testNameContentFontSize);
+                contentStream.setFont(contentFont, contentFontSize);
                 float currentTestNameTextY;
-
                 if (formattedTestNameLines.size() <= 1) {
+                    currentTestNameTextY = adjustVert(testNameRowBottomY, testNameCellActualHeight, contentFontSize);
                     contentStream.beginText();
-                    currentTestNameTextY = adjustVert(tableY + descriptionCellActualHeight, testNameCellActualHeight, testNameContentFontSize);
                     contentStream.newLineAtOffset(tableX + col1Width + textPadding, currentTestNameTextY);
                     contentStream.showText(formattedTestNameLines.get(0));
                     contentStream.endText();
                 } else {
-                    currentTestNameTextY = testNameCellTopY - textPadding - (testNameContentFont.getFontDescriptor().getAscent() / 1000f * testNameContentFontSize);
+                    currentTestNameTextY = testNameRowTopY - textPadding - contentAscent;
                     for (String line : formattedTestNameLines) {
                         contentStream.beginText();
                         float textX = tableX + col1Width + textPadding;
                         contentStream.newLineAtOffset(textX, currentTestNameTextY);
                         contentStream.showText(line);
                         contentStream.endText();
-                        currentTestNameTextY -= testNameLineLeading;
+                        currentTestNameTextY -= lineLeading;
                     }
                 }
 
+                // DESCRIPTION (Dynamic Height, Top-aligned for content, label adjusted for single/multi-line)
+                float descriptionRowTopY = tableY + descriptionCellActualHeight;
+                float descriptionRowBottomY = tableY;
                 contentStream.beginText();
                 contentStream.setFont(boldFont, fontSize);
                 float descLabelY;
-                float descriptionCellBottomY = tableY;
-                float descriptionCellTopY = descriptionCellBottomY + descriptionCellActualHeight;
-
-                if (formattedDescriptionLines.size() <= 1) {
-                    descLabelY = adjustVert(descriptionCellBottomY, descriptionCellActualHeight, fontSize);
-                } else {
-                    descLabelY = descriptionCellTopY - textPadding - (boldFont.getFontDescriptor().getAscent() / 1000f * fontSize);
+                if (formattedDescriptionLines.size() <= 1) { // If single line, center label within standard height
+                    descLabelY = adjustVert(descriptionRowBottomY, descriptionCellActualHeight, fontSize);
+                } else { // If multi-line, top-align label
+                    descLabelY = descriptionRowTopY - textPadding - labelAscent;
                 }
                 contentStream.newLineAtOffset(tableX + textPadding, descLabelY);
                 contentStream.showText("DESCRIPTION");
                 contentStream.endText();
 
-                contentStream.setFont(descriptionContentFont, descriptionContentFontSize);
+                contentStream.setFont(contentFont, contentFontSize);
                 float currentDescriptionTextY;
-
                 if (formattedDescriptionLines.size() <= 1) {
+                    currentDescriptionTextY = adjustVert(descriptionRowBottomY, descriptionCellActualHeight, contentFontSize);
                     contentStream.beginText();
-                    currentDescriptionTextY = adjustVert(tableY, descriptionCellActualHeight, descriptionContentFontSize);
                     contentStream.newLineAtOffset(tableX + col1Width + textPadding, currentDescriptionTextY);
                     contentStream.showText(formattedDescriptionLines.get(0));
                     contentStream.endText();
                 } else {
-                    currentDescriptionTextY = descriptionCellTopY - textPadding - (descriptionContentFont.getFontDescriptor().getAscent() / 1000f * descriptionContentFontSize);
+                    currentDescriptionTextY = descriptionRowTopY - textPadding - contentAscent;
                     for (String line : formattedDescriptionLines) {
                         contentStream.beginText();
                         float textX = tableX + col1Width + textPadding;
                         contentStream.newLineAtOffset(textX, currentDescriptionTextY);
                         contentStream.showText(line);
                         contentStream.endText();
-                        currentDescriptionTextY -= descriptionLineLeading;
+                        currentDescriptionTextY -= lineLeading; // Usa lineLeading
                     }
                 }
 
@@ -633,14 +653,12 @@ public class PdfReporter {
                     try (PDPageContentStream footerContentStream = new PDPageContentStream(document, page, PDPageContentStream.AppendMode.APPEND, true, true)) {
                         float pageWidth = page.getMediaBox().getWidth();
                         float footerTableWidth = pageWidth - (2 * margin);
-                        float footerCol1Width = footerTableWidth * 0.25f; // 25% para a primeira coluna
+                        float footerCol1Width = footerTableWidth * 0.25f;
                         float footerTableX = margin; // Definindo aqui para o escopo do loop
 
                         // Posições para o quadro "PAGE"
                         float pageRowY = margin;
                         String pageNumberText = (i + 1) + " of " + totalPageCount;
-                        // Removida a linha pageNumberTextWidth se não for mais usada para cálculo de centralização
-                        // float pageNumberTextWidth = footerFont.getStringWidth(pageNumberText) / 1000f * footerFontSize;
 
                         // Ajustado o posicionamento horizontal para alinhar à esquerda
                         float pageNumberX = footerTableX + footerCol1Width + footerTextPadding; // Alinhado à esquerda

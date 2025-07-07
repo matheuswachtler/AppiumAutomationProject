@@ -13,7 +13,7 @@ import utils.HooksManager;
 public class QA123456IT {
 
     @Test
-    @DisplayName("QA123459 - Lorem Ipsum is simply dummy text of the printing ")
+    @DisplayName("QA123459 - Lorem Ipsum is simply dummy text of the printing of the printing and printing dummy simply")
     @Tag("login")
     @Description(
             """
