@@ -24,7 +24,7 @@ public class QA123456IT {
                     Lorem Ipsum is simply dummy text of the printing and printing dummy simply
             """)
 
-    public void QA123456() throws Exception {
+    public void QA123456() {
         LoginFunc login = new LoginFunc(DriverManager.getDriver());
 
         login.validatesAccessSuccessfully(
