@@ -13,7 +13,7 @@ public class LoginFunc {
         this.driver = driver;
     }
 
-    public void validatesAccessSuccessfully(String username, String password) throws Exception {
+    public void validatesAccessSuccessfully(String username, String password) {
 
         new ValidationHelper(driver)
                 .assertTextsPresent(MessagesAndTitlesLogin.LOGIN_PAGE);
