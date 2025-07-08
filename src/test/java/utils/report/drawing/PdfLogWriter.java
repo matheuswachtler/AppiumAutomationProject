@@ -18,6 +18,10 @@ public class PdfLogWriter {
     private static final float DUMMY_SUMMARY_TABLE_HEIGHT = 60;
     private static final float DUMMY_SUMMARY_MARGIN_FROM_BOTTOM = 50;
 
+    private static float adjustVert(float baseY, float rowHeight, float fontSize) {
+        return baseY + (rowHeight - (fontSize * 0.7f)) / 2f;
+    }
+
     public static void generateLogsPage(PDDocument document, TestReportData reportData, PdfPageTemplate pageTemplate) throws IOException {
         if (reportData.getLogsContent().isEmpty()) {
             return;
@@ -33,20 +37,36 @@ public class PdfLogWriter {
             float leading = LEADING_FACTOR * LOG_FONT_SIZE;
             float startX = MARGIN;
 
-            String logTitle = "EXECUTION LOGS FOR TEST: " + reportData.getTestNumber();
+            String logTitle = "EXECUTION LOGS";
             PDType1Font titleFont = new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD);
-            float titleFontSize = 12;
-            float titleWidth = titleFont.getStringWidth(logTitle) / 1000f * titleFontSize;
+            float titleFontSize = 18;
 
-            float currentY = currentPage.getMediaBox().getHeight() - MARGIN - 30;
+            float logTitleAreaHeight = 20f;
+            float logTitleAreaTopY = currentPage.getMediaBox().getHeight() - MARGIN;
+            float logTitleAreaBottomY = logTitleAreaTopY - logTitleAreaHeight;
+
+            contentStream.setLineWidth(1f);
+            contentStream.setStrokingColor(0, 0, 0);
+
+            contentStream.moveTo(MARGIN, logTitleAreaTopY);
+            contentStream.lineTo(currentPage.getMediaBox().getWidth() - MARGIN, logTitleAreaTopY);
+            contentStream.stroke();
+
+            contentStream.moveTo(MARGIN, logTitleAreaBottomY);
+            contentStream.lineTo(currentPage.getMediaBox().getWidth() - MARGIN, logTitleAreaBottomY);
+            contentStream.stroke();
+
+            float titleWidth = titleFont.getStringWidth(logTitle) / 1000f * titleFontSize;
+            float titleX = (currentPage.getMediaBox().getWidth() - titleWidth) / 2f;
+            float titleY = adjustVert(logTitleAreaBottomY, logTitleAreaHeight, titleFontSize);
 
             contentStream.beginText();
             contentStream.setFont(titleFont, titleFontSize);
-            float titleX = (currentPage.getMediaBox().getWidth() - titleWidth) / 2f;
-            float titleY = currentPage.getMediaBox().getHeight() - MARGIN + 15;
             contentStream.newLineAtOffset(titleX, titleY);
             contentStream.showText(logTitle);
             contentStream.endText();
+
+            float currentY = logTitleAreaBottomY - 10;
 
             contentStream.beginText();
             contentStream.setFont(logFont, LOG_FONT_SIZE);
@@ -67,6 +87,23 @@ public class PdfLogWriter {
                     currentPage = pageTemplate.addPageWithMarginAndFooter(document);
                     contentStream = new PDPageContentStream(document, currentPage, PDPageContentStream.AppendMode.APPEND, true, true);
 
+                    logTitleAreaTopY = currentPage.getMediaBox().getHeight() - MARGIN;
+                    logTitleAreaBottomY = logTitleAreaTopY - logTitleAreaHeight;
+
+                    contentStream.setLineWidth(1f);
+                    contentStream.setStrokingColor(0, 0, 0);
+
+                    contentStream.moveTo(MARGIN, logTitleAreaTopY);
+                    contentStream.lineTo(currentPage.getMediaBox().getWidth() - MARGIN, logTitleAreaTopY);
+                    contentStream.stroke();
+
+                    contentStream.moveTo(MARGIN, logTitleAreaBottomY);
+                    contentStream.lineTo(currentPage.getMediaBox().getWidth() - MARGIN, logTitleAreaBottomY);
+                    contentStream.stroke();
+
+                    titleX = (currentPage.getMediaBox().getWidth() - titleWidth) / 2f;
+                    titleY = adjustVert(logTitleAreaBottomY, logTitleAreaHeight, titleFontSize);
+
                     contentStream.beginText();
                     contentStream.setFont(titleFont, titleFontSize);
                     contentStream.newLineAtOffset(titleX, titleY);
@@ -76,7 +113,7 @@ public class PdfLogWriter {
                     contentStream.beginText();
                     contentStream.setFont(logFont, LOG_FONT_SIZE);
                     contentStream.setLeading(leading);
-                    currentY = currentPage.getMediaBox().getHeight() - MARGIN - 30;
+                    currentY = logTitleAreaBottomY - 10;
                     contentStream.newLineAtOffset(startX, currentY);
                 }
                 contentStream.showText(cleanedLine);

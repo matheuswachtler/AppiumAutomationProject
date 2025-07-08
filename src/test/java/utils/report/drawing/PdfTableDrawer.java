@@ -295,7 +295,7 @@ public class PdfTableDrawer {
             contentStream.setFont(boldFont, fontSize);
             float responsibleLabelY = adjustVert(responsibleRowBottomY, standardFixedRowHeight, fontSize);
             contentStream.newLineAtOffset(pageMargin + textPadding, responsibleLabelY);
-            contentStream.showText("RESPONSIBLE");
+            contentStream.showText("USER");
             contentStream.endText();
 
             contentStream.beginText();
