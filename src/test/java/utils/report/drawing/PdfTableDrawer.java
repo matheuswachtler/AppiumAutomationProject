@@ -176,14 +176,18 @@ public class PdfTableDrawer {
                 descriptionCellActualHeight = standardFixedRowHeight;
             }
 
-
-            float summaryTableHeight = (3 * standardFixedRowHeight) + standardFixedRowHeight + standardFixedRowHeight + testNameCellActualHeight + descriptionCellActualHeight;
+            float testReportRowHeight = 20f;
+            float summaryTableHeight = (3 * standardFixedRowHeight) + standardFixedRowHeight + standardFixedRowHeight + testNameCellActualHeight + descriptionCellActualHeight + testReportRowHeight;
 
             float tableY = pageCurrentHeight - pageMargin - summaryTableHeight;
 
             contentStream.setLineWidth(1f);
             contentStream.setStrokingColor(0, 0, 0);
             contentStream.addRect(pageMargin, tableY, tableWidth, summaryTableHeight);
+            contentStream.stroke();
+
+            contentStream.moveTo(pageMargin, tableY + summaryTableHeight - testReportRowHeight);
+            contentStream.lineTo(pageMargin + tableWidth, tableY + summaryTableHeight - testReportRowHeight);
             contentStream.stroke();
 
             contentStream.moveTo(pageMargin, tableY + descriptionCellActualHeight);
@@ -215,10 +219,23 @@ public class PdfTableDrawer {
             contentStream.stroke();
 
             contentStream.moveTo(pageMargin + col1Width, tableY);
-            contentStream.lineTo(pageMargin + col1Width, tableY + summaryTableHeight);
+            contentStream.lineTo(pageMargin + col1Width, tableY + summaryTableHeight - testReportRowHeight);
             contentStream.stroke();
 
-            float execDateRowBottomY = tableY + summaryTableHeight - standardFixedRowHeight;
+            float testReportTitleFontSize = 18;
+            float testReportTextY = tableY + summaryTableHeight - testReportRowHeight;
+            contentStream.beginText();
+            contentStream.setFont(boldFont, testReportTitleFontSize);
+            String testReportString = "TEST REPORT";
+            float testReportStringWidth = boldFont.getStringWidth(testReportString) / 1000f * testReportTitleFontSize;
+            float testReportX = pageMargin + (tableWidth - testReportStringWidth) / 2f;
+            float testReportLabelY = adjustVert(testReportTextY, testReportRowHeight, testReportTitleFontSize);
+            contentStream.newLineAtOffset(testReportX, testReportLabelY);
+            contentStream.showText(testReportString);
+            contentStream.endText();
+
+
+            float execDateRowBottomY = tableY + summaryTableHeight - standardFixedRowHeight - testReportRowHeight;
             contentStream.beginText();
             contentStream.setFont(boldFont, fontSize);
             float execDateLabelY = adjustVert(execDateRowBottomY, standardFixedRowHeight, fontSize);
@@ -233,7 +250,7 @@ public class PdfTableDrawer {
             contentStream.showText(reportData.getFormattedExecutionDate());
             contentStream.endText();
 
-            float execTimeRowBottomY = tableY + summaryTableHeight - (2 * standardFixedRowHeight);
+            float execTimeRowBottomY = tableY + summaryTableHeight - (2 * standardFixedRowHeight) - testReportRowHeight;
             contentStream.beginText();
             contentStream.setFont(boldFont, fontSize);
             float execTimeLabelY = adjustVert(execTimeRowBottomY, standardFixedRowHeight, fontSize);
@@ -248,7 +265,7 @@ public class PdfTableDrawer {
             contentStream.showText(reportData.getFormattedExecutionTime());
             contentStream.endText();
 
-            float testResultRowBottomY = tableY + summaryTableHeight - (3 * standardFixedRowHeight);
+            float testResultRowBottomY = tableY + summaryTableHeight - (3 * standardFixedRowHeight) - testReportRowHeight;
             contentStream.beginText();
             contentStream.setFont(boldFont, fontSize);
             contentStream.setNonStrokingColor(Color.BLACK);
