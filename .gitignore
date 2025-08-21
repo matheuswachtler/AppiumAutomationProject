@@ -37,3 +37,5 @@ target/site/serenity/
 
 hs_err_pid*
 replay_pid*
+
+allure-results/
