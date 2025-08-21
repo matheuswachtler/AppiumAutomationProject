@@ -1,0 +1,14 @@
+[
+  {
+    "QA123456": {
+      "android": {
+        "username": "standard_user",
+        "password": "secret_sauce"
+      },
+      "ios": {
+        "username": "standard_user",
+        "password": "secret_sauce",
+      }
+    }
+  }
+]
