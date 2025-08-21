@@ -27,10 +27,16 @@ public class BasePage {
     }
 
     public WebElement waitForElementVisibility(WebElement element) {
+        System.out.println("Waiting for element visibility: " + (element != null ? element.toString() : "null"));
         return wait.until(ExpectedConditions.visibilityOf(element));
     }
 
     public void enterText(WebElement element, String text, String errorMessage) {
+        String logText = (element != null && element.toString().toLowerCase().contains("password")) ? "[PROTECTED]" : text;
+        if (element != null && element.toString().toLowerCase().contains("username")) {
+            logText = "[PROTECTED]";
+        }
+        System.out.println("Entering text '" + logText + "' into element: " + (element != null ? element.toString() : "null"));
         try {
             WebElement visibleElement = waitForElementVisibility(element);
             visibleElement.sendKeys(text);
@@ -44,6 +50,7 @@ public class BasePage {
     }
 
     public void clickElement(WebElement element, String errorMessage) {
+        System.out.println("Clicking element: " + (element != null ? element.toString() : "null"));
         try {
             WebElement clickableElement = wait.until(ExpectedConditions.elementToBeClickable(element));
             clickableElement.click();

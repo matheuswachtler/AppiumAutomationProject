@@ -91,7 +91,7 @@ public class PdfReporter {
                 contentStream.drawImage(pdImage, imageX, imageY, scaledWidth, scaledHeight);
 
             }
-            System.out.println("Screenshot '" + screenshotName + "' added to PDF.");
+            // Removido o log: System.out.println("Screenshot '" + screenshotName + "' added to PDF.");
 
         } catch (IOException e) {
             System.err.println("Error adding screenshot to PDF: " + e.getMessage());
