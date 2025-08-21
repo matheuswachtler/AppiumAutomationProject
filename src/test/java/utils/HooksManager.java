@@ -19,6 +19,10 @@ public class HooksManager implements BeforeTestExecutionCallback, AfterTestExecu
     private static final ExtensionContext.Namespace NAMESPACE = ExtensionContext.Namespace.create(HooksManager.class);
     private static final String GIT_USER_NAME_CONFIG_KEY = "user.name";
 
+    private PrintStream originalOut;
+    private PrintStream originalErr;
+    private ByteArrayOutputStream byteArrayOutputStream;
+
     @Override
     public void beforeTestExecution(ExtensionContext context) {
         ExtensionContext.Store store = context.getStore(NAMESPACE);
@@ -26,94 +30,69 @@ public class HooksManager implements BeforeTestExecutionCallback, AfterTestExecu
         LocalDateTime testStartTime = LocalDateTime.now();
         store.put("testStartTime", testStartTime);
 
-        PrintStream oldOut = System.out;
-        PrintStream oldErr = System.err;
-        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        this.originalOut = System.out;
+        this.originalErr = System.err;
+        this.byteArrayOutputStream = new ByteArrayOutputStream();
 
-        TeeOutputStream teeOut = new TeeOutputStream(oldOut, byteArrayOutputStream);
-        TeeOutputStream teeErr = new TeeOutputStream(oldErr, byteArrayOutputStream);
+        TeeOutputStream teeOut = new TeeOutputStream(this.originalOut, this.byteArrayOutputStream);
+        TeeOutputStream teeErr = new TeeOutputStream(this.originalErr, this.byteArrayOutputStream);
 
-        System.setOut(new PrintStream(teeOut, true));
-        System.setErr(new PrintStream(teeErr, true));
+        System.setOut(new TimestampedPrintStream(teeOut));
+        System.setErr(new TimestampedPrintStream(teeErr));
 
-        store.put("oldOut", oldOut);
-        store.put("oldErr", oldErr);
-        store.put("byteArrayOutputStream", byteArrayOutputStream);
-
-        String contextName = context.getTags().stream().findFirst().orElse("general");
-
-        String fullDisplayName = context.getDisplayName();
-        String testCode = fullDisplayName;
-        String descriptiveTestName = fullDisplayName;
-
-        int dashIndex = fullDisplayName.indexOf(" - ");
-        if (dashIndex != -1) {
-            testCode = fullDisplayName.substring(0, dashIndex);
-            descriptiveTestName = fullDisplayName.substring(dashIndex + 3);
+        Method testMethod = context.getRequiredTestMethod();
+        String testCaseId = context.getDisplayName();
+        String description = null;
+        if (testMethod.isAnnotationPresent(Description.class)) {
+            description = testMethod.getAnnotation(Description.class).value();
         }
 
-        String reportFileName = testCode.replaceAll("[^a-zA-Z0-9.-]", "_");
-        String platformName = ConfigReader.getProperty("platform.name");
+        String testPackageName = context.getTestClass().get().getPackageName();
+        String contextName = testPackageName.substring(testPackageName.lastIndexOf('.') + 1);
 
-        PdfReporter pdfReporter = new PdfReporter(contextName, reportFileName, platformName.toLowerCase());
-        store.put("pdfReporter", pdfReporter);
+        String reportName = testCaseId.split(" ")[0];
 
-        TestReportData reportData = pdfReporter.getReportData();
+        PdfReporter pdfReporter = new PdfReporter(
+                contextName,
+                reportName,
+                ConfigReader.getProperty("platform.name")
+        );
 
-        reportData.setTestName(descriptiveTestName);
-        reportData.setNewInfoFieldContent(testCode);
+        pdfReporter.getReportData().setTestDescription(description);
 
-        String gitUserName = getGitConfig();
-        if (gitUserName != null && !gitUserName.isEmpty()) {
-            reportData.setResponsibleContent(gitUserName.toUpperCase());
-        } else {
-            String systemUserName = System.getProperty("user.name");
-            reportData.setResponsibleContent(systemUserName != null ? systemUserName.toUpperCase() : "N/A");
-            System.err.println("Could not get Git user.name. Falling back to system user.name: " + (systemUserName != null ? systemUserName : "N/A"));
-        }
-
-        context.getElement()
-               .filter(Method.class::isInstance)
-               .map(method -> (Method) method)
-               .map(method -> method.getAnnotation(Description.class))
-               .ifPresent(descriptionAnnotation -> reportData.setTestDescription(descriptionAnnotation.value()));
+        String responsible = getGitConfig();
+        pdfReporter.getReportData().setResponsibleContent(responsible);
 
         DriverManager.initializeDriver(pdfReporter);
+
+        store.put("pdfReporter", pdfReporter);
     }
 
     @Override
     public void afterTestExecution(ExtensionContext context) {
         ExtensionContext.Store store = context.getStore(NAMESPACE);
 
-        String finalTestStatus = "SUCCESS";
-        Throwable throwable = context.getExecutionException().orElse(null);
-        if (throwable != null) {
-            finalTestStatus = "FAILURE";
+        System.setOut(this.originalOut);
+        System.setErr(this.originalErr);
+
+        TestReportData reportData = DriverManager.getPdfReporter().getReportData();
+        reportData.setLogsContent(byteArrayOutputStream.toString());
+
+        LocalDateTime testEndTime = LocalDateTime.now();
+        reportData.setExecutionTimes((LocalDateTime) store.get("testStartTime"), testEndTime);
+
+        if (context.getExecutionException().isPresent()) {
+            reportData.setTestStatus("Failed");
+            System.err.println("TEST FAILED: " + context.getExecutionException().get().getMessage());
+        } else {
+            reportData.setTestStatus("Passed");
+            System.out.println("TEST PASSED.");
         }
 
-        System.out.println("Closing Appium session...");
         DriverManager.quitDriver();
 
-        PrintStream oldOut = store.remove("oldOut", PrintStream.class);
-        PrintStream oldErr = store.remove("oldErr", PrintStream.class);
-        ByteArrayOutputStream byteArrayOutputStream = store.remove("byteArrayOutputStream", ByteArrayOutputStream.class);
-
-        if (oldOut != null) System.setOut(oldOut);
-        if (oldErr != null) System.setErr(oldErr);
-
-        String capturedLogs = byteArrayOutputStream != null ? byteArrayOutputStream.toString() : "";
-        if (oldOut != null) oldOut.println(capturedLogs);
-
-        LocalDateTime testStartTime = store.remove("testStartTime", LocalDateTime.class);
-        LocalDateTime testEndTime = LocalDateTime.now();
-
-        PdfReporter pdfReporter = store.remove("pdfReporter", PdfReporter.class);
+        PdfReporter pdfReporter = (PdfReporter) store.get("pdfReporter");
         if (pdfReporter != null) {
-            TestReportData reportData = pdfReporter.getReportData();
-
-            reportData.setLogsContent(capturedLogs);
-            reportData.setExecutionTimes(testStartTime, testEndTime);
-            reportData.setTestStatus(finalTestStatus);
             pdfReporter.closeReport();
         }
 
