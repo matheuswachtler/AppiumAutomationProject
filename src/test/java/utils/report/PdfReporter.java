@@ -38,7 +38,7 @@ public class PdfReporter {
             if (!Files.exists(contextDirPath)) {
                 Files.createDirectories(contextDirPath);
             }
-            String timestamp = LocalDateTime.now().format(DATE_TIME_FORMATTER);
+            String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
             this.reportFilePath = contextDirPath
                     .resolve(reportName + "_" + platformName + "_" + timestamp + ".pdf")
                     .toString();

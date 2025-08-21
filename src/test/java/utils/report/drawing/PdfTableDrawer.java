@@ -141,27 +141,32 @@ public class PdfTableDrawer {
             float availableWidthForDescriptionText = tableWidth - col1Width - (2 * textPadding);
             List<String> formattedDescriptionLines = new ArrayList<>();
             String descriptionToFormat = (reportData.getTestDescription() != null && !reportData.getTestDescription().isEmpty()) ?
-                    reportData.getTestDescription().replaceAll("[\\n\\r\\t]", " ") : "N/A";
+                    reportData.getTestDescription().replaceAll("[\t]", " ") : "N/A";
 
             if ("N/A".equals(descriptionToFormat)) {
                 formattedDescriptionLines.add("N/A");
             } else {
-                String[] words = descriptionToFormat.split(" ");
-                StringBuilder currentLine = new StringBuilder();
-                for (String word : words) {
-                    float projectedWidth = contentFont.getStringWidth(currentLine + (!currentLine.isEmpty() ? " " : "") + word) / 1000f * contentFontSize;
-                    if (projectedWidth > availableWidthForDescriptionText && !currentLine.isEmpty()) {
-                        formattedDescriptionLines.add(currentLine.toString().trim());
-                        currentLine = new StringBuilder(word);
-                    } else {
-                        if (!currentLine.isEmpty()) {
-                            currentLine.append(" ");
+                // Quebra a descrição em linhas pelo caractere de nova linha
+                String[] descLines = descriptionToFormat.split("\\r?\\n");
+                for (String descLine : descLines) {
+                    // Quebra cada linha longa em múltiplas linhas se necessário
+                    String[] words = descLine.split(" ");
+                    StringBuilder currentLine = new StringBuilder();
+                    for (String word : words) {
+                        float projectedWidth = contentFont.getStringWidth(currentLine + (!currentLine.isEmpty() ? " " : "") + word) / 1000f * contentFontSize;
+                        if (projectedWidth > availableWidthForDescriptionText && !currentLine.isEmpty()) {
+                            formattedDescriptionLines.add(currentLine.toString().trim());
+                            currentLine = new StringBuilder(word);
+                        } else {
+                            if (!currentLine.isEmpty()) {
+                                currentLine.append(" ");
+                            }
+                            currentLine.append(word);
                         }
-                        currentLine.append(word);
                     }
-                }
-                if (!currentLine.isEmpty()) {
-                    formattedDescriptionLines.add(currentLine.toString().trim());
+                    if (!currentLine.isEmpty()) {
+                        formattedDescriptionLines.add(currentLine.toString().trim());
+                    }
                 }
             }
 
@@ -274,9 +279,9 @@ public class PdfTableDrawer {
             contentStream.showText("TEST RESULT");
             contentStream.endText();
 
-            if (reportData.getTestStatus().equalsIgnoreCase("SUCCESS")) {
+            if (reportData.getTestStatus().equalsIgnoreCase("PASSED")) {
                 contentStream.setNonStrokingColor(Color.GREEN);
-            } else if (reportData.getTestStatus().equalsIgnoreCase("FAILURE")) {
+            } else if (reportData.getTestStatus().equalsIgnoreCase("FAILED")) {
                 contentStream.setNonStrokingColor(Color.RED);
             } else {
                 contentStream.setNonStrokingColor(Color.BLACK);
