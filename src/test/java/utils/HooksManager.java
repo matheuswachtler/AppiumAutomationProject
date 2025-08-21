@@ -59,6 +59,7 @@ public class HooksManager implements BeforeTestExecutionCallback, AfterTestExecu
         );
 
         pdfReporter.getReportData().setTestDescription(description);
+        pdfReporter.getReportData().setTestName(testCaseId);
 
         String responsible = getGitConfig();
         pdfReporter.getReportData().setResponsibleContent(responsible);

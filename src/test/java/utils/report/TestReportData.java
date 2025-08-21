@@ -19,7 +19,8 @@ public class TestReportData {
 
     public TestReportData(String reportName) {
         this.testNumber = reportName;
-        this.testName = reportName;
+        this.newInfoFieldContent = reportName;
+        this.testName = "";
     }
 
     public String getTestNumber() {
@@ -64,7 +65,12 @@ public class TestReportData {
     }
 
     public void setTestName(String testName) {
-        this.testName = testName != null ? testName.toUpperCase() : "";
+        if (testName != null && testName.contains("-")) {
+            String[] parts = testName.split("-", 2);
+            this.testName = parts[1].trim().toUpperCase();
+        } else {
+            this.testName = testName != null ? testName.toUpperCase() : "";
+        }
     }
 
     public void setTestDescription(String description) {
