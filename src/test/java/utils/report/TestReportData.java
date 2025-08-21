@@ -12,7 +12,7 @@ public class TestReportData {
     private String testStatus = "N/A";
     private String testName;
     private String testDescription = "";
-    private String newInfoFieldContent = "N/A";
+    private final String newInfoFieldContent;
     private String responsibleContent = "N/A";
 
     private static final DateTimeFormatter DISPLAY_DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
@@ -75,10 +75,6 @@ public class TestReportData {
 
     public void setTestDescription(String description) {
         this.testDescription = description != null ? description.toUpperCase() : "";
-    }
-
-    public void setNewInfoFieldContent(String content) {
-        this.newInfoFieldContent = content != null ? content : "N/A";
     }
 
     public void setResponsibleContent(String content) {

@@ -47,7 +47,9 @@ public class HooksManager implements BeforeTestExecutionCallback, AfterTestExecu
             description = testMethod.getAnnotation(Description.class).value();
         }
 
-        String testPackageName = context.getTestClass().get().getPackageName();
+        String testPackageName = context.getTestClass()
+                .map(Class::getPackageName)
+                .orElse("");
         String contextName = testPackageName.substring(testPackageName.lastIndexOf('.') + 1);
 
         String reportName = testCaseId.split(" ")[0];

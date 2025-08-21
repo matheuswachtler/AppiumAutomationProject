@@ -141,15 +141,13 @@ public class PdfTableDrawer {
             float availableWidthForDescriptionText = tableWidth - col1Width - (2 * textPadding);
             List<String> formattedDescriptionLines = new ArrayList<>();
             String descriptionToFormat = (reportData.getTestDescription() != null && !reportData.getTestDescription().isEmpty()) ?
-                    reportData.getTestDescription().replaceAll("[\t]", " ") : "N/A";
+                    reportData.getTestDescription().replaceAll("\t", " ") : "N/A";
 
             if ("N/A".equals(descriptionToFormat)) {
                 formattedDescriptionLines.add("N/A");
             } else {
-                // Quebra a descrição em linhas pelo caractere de nova linha
                 String[] descLines = descriptionToFormat.split("\\r?\\n");
                 for (String descLine : descLines) {
-                    // Quebra cada linha longa em múltiplas linhas se necessário
                     String[] words = descLine.split(" ");
                     StringBuilder currentLine = new StringBuilder();
                     for (String word : words) {

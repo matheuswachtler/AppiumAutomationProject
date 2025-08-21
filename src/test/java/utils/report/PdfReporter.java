@@ -26,7 +26,6 @@ public class PdfReporter {
     private final PdfPageTemplate pdfPageTemplate;
 
     private static final String BASE_REPORTS_DIR = "target/pdf-reports/";
-    private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
 
     public PdfReporter(String contextName, String reportName, String platformName) {
         this.document = new PDDocument();
@@ -42,8 +41,6 @@ public class PdfReporter {
             this.reportFilePath = contextDirPath
                     .resolve(reportName + "_" + platformName + "_" + timestamp + ".pdf")
                     .toString();
-            System.out.println("PDF report initialized at: " + this.reportFilePath);
-
             pdfPageTemplate.addPageWithMarginAndFooter(document);
 
         } catch (IOException e) {
