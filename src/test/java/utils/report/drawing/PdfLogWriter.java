@@ -37,34 +37,37 @@ public class PdfLogWriter {
             float textY = titleY - LOG_AREA_TOP_PADDING;
 
             drawLogTitleArea(contentStream, currentPage, titleY);
+            float stepLogRowY = titleY - TITLE_AREA_HEIGHT;
+            drawStepLogRow(contentStream, pageWidth, MARGIN, stepLogRowY);
+            float textStartY = stepLogRowY - 15;
 
             PDType1Font logFont = new PDType1Font(Standard14Fonts.FontName.HELVETICA);
             float logFontSize = LOG_FONT_SIZE;
             float leading = logFontSize * LEADING_FACTOR;
-            float margin = MARGIN;
-            float maxLineWidth = pageWidth - (2 * margin) - LOG_INDENT;
+            float maxLineWidth = pageWidth - (2 * MARGIN) - LOG_INDENT;
 
             contentStream.setFont(logFont, logFontSize);
             contentStream.setLeading(leading);
 
             String[] logLines = reportData.getLogsContent().split("\\r?\\n");
-            float currentY = textY;
+            float currentY = textStartY;
 
             for (String line : logLines) {
-                if (currentY <= (margin + (LOG_FONT_SIZE * 2))) {
+                if (currentY <= (MARGIN + (LOG_FONT_SIZE * 2) + 30)) {
                     contentStream.close();
                     currentPage = pageTemplate.addPageWithMarginAndFooter(document);
                     contentStream = new PDPageContentStream(document, currentPage, PDPageContentStream.AppendMode.APPEND, true, true);
+                    drawLogTitleArea(contentStream, currentPage, titleY);
+                    float newStepLogRowY = titleY - TITLE_AREA_HEIGHT;
+                    drawStepLogRow(contentStream, pageWidth, MARGIN, newStepLogRowY);
                     contentStream.setFont(logFont, logFontSize);
                     contentStream.setLeading(leading);
-                    currentY = pageHeight - margin - leading;
+                    currentY = newStepLogRowY - 25; // Espaço maior após a linha STEP/LOG
                 }
-
                 List<String> wrappedLines = wrapTextToLines(line, logFont, logFontSize, maxLineWidth);
-
                 for (String wrappedLine : wrappedLines) {
                     contentStream.beginText();
-                    contentStream.newLineAtOffset(margin + LOG_INDENT, currentY);
+                    contentStream.newLineAtOffset(MARGIN + LOG_INDENT, currentY);
                     contentStream.showText(wrappedLine);
                     contentStream.endText();
                     currentY -= leading;
@@ -128,5 +131,33 @@ public class PdfLogWriter {
         }
         result.add(line.toString());
         return result;
+    }
+
+    private static void drawStepLogRow(PDPageContentStream contentStream, float pageWidth, float margin, float y) throws IOException {
+        float tableWidth = pageWidth - (2 * margin);
+        float col1Width = tableWidth * 0.25f;
+        float rowHeight = 20f;
+        contentStream.setLineWidth(1f);
+        contentStream.setStrokingColor(0, 0, 0);
+        contentStream.addRect(margin, y, tableWidth, rowHeight);
+        contentStream.stroke();
+        contentStream.moveTo(margin + col1Width, y);
+        contentStream.lineTo(margin + col1Width, y + rowHeight);
+        contentStream.stroke();
+        PDType1Font boldFont = new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD);
+        PDType1Font regularFont = new PDType1Font(Standard14Fonts.FontName.HELVETICA);
+        float fontSize = 12;
+        float textPadding = 5;
+        float labelY = y + (rowHeight - fontSize) / 2f;
+        contentStream.beginText();
+        contentStream.setFont(boldFont, fontSize);
+        contentStream.newLineAtOffset(margin + textPadding, labelY);
+        contentStream.showText("STEP");
+        contentStream.endText();
+        contentStream.beginText();
+        contentStream.setFont(regularFont, fontSize);
+        contentStream.newLineAtOffset(margin + col1Width + textPadding, labelY);
+        contentStream.showText("LOG");
+        contentStream.endText();
     }
 }
