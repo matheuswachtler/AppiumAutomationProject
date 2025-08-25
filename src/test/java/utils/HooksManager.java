@@ -2,11 +2,12 @@ package utils;
 
 import org.apache.commons.io.output.TeeOutputStream;
 import org.junit.jupiter.api.extension.*;
-import jdk.jfr.Description;
 import utils.api.ApiOrchestrator;
 import utils.report.PdfReporter;
 import utils.report.TestReportData;
+import utils.report.TimestampedPrintStream;
 import utils.tests.TestUtils;
+import org.junit.jupiter.api.DisplayName;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -99,12 +100,19 @@ public class HooksManager implements BeforeTestExecutionCallback, AfterTestExecu
             String responsible = store.get("responsible", String.class);
             reportData.setResponsibleContent(responsible);
 
-            String testName = context.getRequiredTestMethod().getName();
+            Method testMethod = context.getRequiredTestMethod();
+
+            // Corrigido: usar @DisplayName se existir, senão nome do método
+            String testName;
+            if (testMethod.isAnnotationPresent(DisplayName.class)) {
+                testName = testMethod.getAnnotation(DisplayName.class).value();
+            } else {
+                testName = testMethod.getName();
+            }
             reportData.setTestName(testName);
 
-            Method testMethod = context.getRequiredTestMethod();
-            if (testMethod.isAnnotationPresent(Description.class)) {
-                String description = testMethod.getAnnotation(Description.class).value();
+            if (testMethod.isAnnotationPresent(jdk.jfr.Description.class)) {
+                String description = testMethod.getAnnotation(jdk.jfr.Description.class).value();
                 reportData.setTestDescription(description);
             }
 

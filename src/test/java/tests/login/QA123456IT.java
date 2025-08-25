@@ -26,11 +26,11 @@ public class QA123456IT extends TestUtils {
             """)
 
     public void QA123456() {
+
         LoginFunc login = new LoginFunc(DriverManager.getDriver());
 
         login.signInExistingUser(
                 recoverValue("username"),
                 recoverValue("password"));
     }
-
 }
