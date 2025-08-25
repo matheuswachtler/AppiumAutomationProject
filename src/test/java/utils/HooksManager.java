@@ -28,24 +28,8 @@ public class HooksManager implements BeforeTestExecutionCallback, AfterTestExecu
 
     @Override
     public void beforeTestExecution(ExtensionContext context) {
-        String scriptName = context.getRequiredTestMethod().getName();
-        Map<String, String> apiConfig = TestUtils.getApiConfig(scriptName);
-
-        if (!apiConfig.isEmpty()) {
-            System.out.println(LocalDateTime.now().toString() + " | [HOOKS MANAGER] API config found for script: " + scriptName);
-            ApiOrchestrator apiOrchestrator = new ApiOrchestrator();
-            for (Map.Entry<String, String> entry : apiConfig.entrySet()) {
-                String apiName = entry.getKey();
-                String trigger = entry.getValue();
-                if ("TRUE".equalsIgnoreCase(trigger)) {
-                    apiOrchestrator.callApi(apiName, apiConfig);
-                }
-            }
-            System.out.println(LocalDateTime.now().toString() + " | [HOOKS MANAGER] API calls finished. Proceeding with test execution.");
-        }
-
+        // Inicialização do System.out antes de qualquer log do nosso código
         ExtensionContext.Store store = context.getStore(NAMESPACE);
-
         LocalDateTime testStartTime = LocalDateTime.now();
         store.put("testStartTime", testStartTime);
 
@@ -58,6 +42,25 @@ public class HooksManager implements BeforeTestExecutionCallback, AfterTestExecu
 
         System.setOut(new TimestampedPrintStream(teeOut));
         System.setErr(new TimestampedPrintStream(teeErr));
+
+        // --- Lógica de orquestração de API (movida para depois da inicialização do logger) ---
+        String scriptName = context.getRequiredTestMethod().getName();
+        Map<String, String> apiConfig = TestUtils.getApiConfig(scriptName);
+
+        if (!apiConfig.isEmpty()) {
+            System.out.println("[HOOKS MANAGER] API config found for script: " + scriptName);
+            ApiOrchestrator apiOrchestrator = new ApiOrchestrator();
+            for (Map.Entry<String, String> entry : apiConfig.entrySet()) {
+                String apiName = entry.getKey();
+                String trigger = entry.getValue();
+                if ("TRUE".equalsIgnoreCase(trigger)) {
+                    // Passando o mapa completo caso a API precise de outros dados além do trigger.
+                    apiOrchestrator.callApi(apiName, apiConfig);
+                }
+            }
+            System.out.println("[HOOKS MANAGER] API calls finished. Proceeding with test execution.");
+        }
+        // --- Fim da nova lógica ---
 
         Method testMethod = context.getRequiredTestMethod();
         String contextName = testMethod.getDeclaringClass().getSimpleName();
