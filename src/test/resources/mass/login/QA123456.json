@@ -1,6 +1,9 @@
 [
   {
     "QA123456": {
+      "Api": {
+        "apiX": "TRUE"
+      },
       "android": {
         "username": "standard_user",
         "password": "secret_sauce"

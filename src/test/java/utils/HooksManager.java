@@ -3,8 +3,10 @@ package utils;
 import org.apache.commons.io.output.TeeOutputStream;
 import org.junit.jupiter.api.extension.*;
 import jdk.jfr.Description;
+import utils.api.ApiOrchestrator;
 import utils.report.PdfReporter;
 import utils.report.TestReportData;
+import utils.tests.TestUtils;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -13,6 +15,7 @@ import java.time.LocalDateTime;
 import java.lang.reflect.Method;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.util.Map;
 
 public class HooksManager implements BeforeTestExecutionCallback, AfterTestExecutionCallback {
 
@@ -25,6 +28,22 @@ public class HooksManager implements BeforeTestExecutionCallback, AfterTestExecu
 
     @Override
     public void beforeTestExecution(ExtensionContext context) {
+        String scriptName = context.getRequiredTestMethod().getName();
+        Map<String, String> apiConfig = TestUtils.getApiConfig(scriptName);
+
+        if (!apiConfig.isEmpty()) {
+            System.out.println(LocalDateTime.now().toString() + " | [HOOKS MANAGER] API config found for script: " + scriptName);
+            ApiOrchestrator apiOrchestrator = new ApiOrchestrator();
+            for (Map.Entry<String, String> entry : apiConfig.entrySet()) {
+                String apiName = entry.getKey();
+                String trigger = entry.getValue();
+                if ("TRUE".equalsIgnoreCase(trigger)) {
+                    apiOrchestrator.callApi(apiName, apiConfig);
+                }
+            }
+            System.out.println(LocalDateTime.now().toString() + " | [HOOKS MANAGER] API calls finished. Proceeding with test execution.");
+        }
+
         ExtensionContext.Store store = context.getStore(NAMESPACE);
 
         LocalDateTime testStartTime = LocalDateTime.now();
@@ -41,61 +60,51 @@ public class HooksManager implements BeforeTestExecutionCallback, AfterTestExecu
         System.setErr(new TimestampedPrintStream(teeErr));
 
         Method testMethod = context.getRequiredTestMethod();
-        String testCaseId = context.getDisplayName();
-        String description = null;
-        if (testMethod.isAnnotationPresent(Description.class)) {
-            description = testMethod.getAnnotation(Description.class).value();
-        }
-
-        String testPackageName = context.getTestClass()
-                .map(Class::getPackageName)
-                .orElse("");
-        String contextName = testPackageName.substring(testPackageName.lastIndexOf('.') + 1);
-
-        String reportName = testCaseId.split(" ")[0];
-
-        PdfReporter pdfReporter = new PdfReporter(
-                contextName,
-                reportName,
-                ConfigReader.getProperty("platform.name")
-        );
-
-        pdfReporter.getReportData().setTestDescription(description);
-        pdfReporter.getReportData().setTestName(testCaseId);
-
+        String contextName = testMethod.getDeclaringClass().getSimpleName();
+        String reportName = testMethod.getName();
         String responsible = getGitConfig();
-        pdfReporter.getReportData().setResponsibleContent(responsible);
+        String platform = System.getProperty("platformName", "android").toLowerCase();
 
+        PdfReporter pdfReporter = new PdfReporter(contextName, reportName, platform);
         DriverManager.initializeDriver(pdfReporter);
 
         store.put("pdfReporter", pdfReporter);
+        store.put("responsible", responsible);
     }
 
     @Override
     public void afterTestExecution(ExtensionContext context) {
         ExtensionContext.Store store = context.getStore(NAMESPACE);
-
-        System.setOut(this.originalOut);
-        System.setErr(this.originalErr);
-
-        TestReportData reportData = DriverManager.getPdfReporter().getReportData();
-        reportData.setLogsContent(byteArrayOutputStream.toString());
-
+        PdfReporter pdfReporter = store.get("pdfReporter", PdfReporter.class);
+        LocalDateTime testStartTime = store.get("testStartTime", LocalDateTime.class);
         LocalDateTime testEndTime = LocalDateTime.now();
-        reportData.setExecutionTimes((LocalDateTime) store.get("testStartTime"), testEndTime);
+        boolean testFailed = context.getExecutionException().isPresent();
+        String testStatus = testFailed ? "FAIL" : "PASS";
 
-        if (context.getExecutionException().isPresent()) {
-            reportData.setTestStatus("Failed");
-            System.err.println("TEST FAILED: " + context.getExecutionException().get().getMessage());
-        } else {
-            reportData.setTestStatus("Passed");
-            System.out.println("TEST PASSED.");
-        }
+        // Restore original System.out and System.err
+        System.out.flush();
+        System.err.flush();
+        System.setOut(originalOut);
+        System.setErr(originalErr);
 
-        DriverManager.quitDriver();
-
-        PdfReporter pdfReporter = (PdfReporter) store.get("pdfReporter");
         if (pdfReporter != null) {
+            TestReportData reportData = pdfReporter.getReportData();
+            reportData.setTestStatus(testStatus);
+            reportData.setExecutionTimes(testStartTime, testEndTime);
+            reportData.setLogsContent(byteArrayOutputStream.toString());
+
+            String responsible = store.get("responsible", String.class);
+            reportData.setResponsibleContent(responsible);
+
+            String testName = context.getRequiredTestMethod().getName();
+            reportData.setTestName(testName);
+
+            Method testMethod = context.getRequiredTestMethod();
+            if (testMethod.isAnnotationPresent(Description.class)) {
+                String description = testMethod.getAnnotation(Description.class).value();
+                reportData.setTestDescription(description);
+            }
+
             pdfReporter.closeReport();
         }
 
