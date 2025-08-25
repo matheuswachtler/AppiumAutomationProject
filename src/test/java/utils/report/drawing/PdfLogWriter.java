@@ -51,6 +51,7 @@ public class PdfLogWriter {
             float currentY = textStartY;
 
             for (String line : logLines) {
+                String sanitizedLine = line.replaceAll("[\\p{Cntrl}&&[^\r\n]]", " ");
                 if (currentY <= (MARGIN + (LOG_FONT_SIZE * 2) + 30)) {
                     contentStream.close();
                     currentPage = pageTemplate.addPageWithMarginAndFooter(document);
@@ -62,7 +63,7 @@ public class PdfLogWriter {
                     contentStream.setLeading(leading);
                     currentY = newStepLogRowY - 15;
                 }
-                List<String> wrappedLines = wrapTextToLines(line, logFont, logFontSize, maxLineWidth);
+                List<String> wrappedLines = wrapTextToLines(sanitizedLine, logFont, logFontSize, maxLineWidth);
                 for (String wrappedLine : wrappedLines) {
                     contentStream.beginText();
                     contentStream.newLineAtOffset(MARGIN + LOG_INDENT, currentY);
@@ -108,7 +109,8 @@ public class PdfLogWriter {
 
     private static List<String> wrapTextToLines(String text, PDType1Font font, float fontSize, float maxWidth) throws IOException {
         List<String> result = new ArrayList<>();
-        String[] words = text.split(" ");
+        String cleanText = text.replaceAll("[\\p{Cntrl}&&[^\r\n]]", " ");
+        String[] words = cleanText.split(" ");
         if (words.length == 0) {
             result.add("");
             return result;

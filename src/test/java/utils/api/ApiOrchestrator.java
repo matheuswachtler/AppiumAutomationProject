@@ -11,8 +11,8 @@ public class ApiOrchestrator {
             case "apiz":
                 apiZ(apiData);
                 break;
-            case "apix":
-                apiX(apiData);
+            case "login_api":
+                login_api(apiData);
                 break;
             case "apiy":
                 apiY(apiData);
@@ -24,14 +24,16 @@ public class ApiOrchestrator {
     }
 
     private void apiZ(Map<String, String> data) {
-        System.out.println("[API ORCHESTRATOR] Executing logic for APIZ.");
+        System.out.println("[API ORCHESTRATOR] Executing logic for the login API Z.");
     }
 
-    private void apiX(Map<String, String> data) {
-        System.out.println("[API ORCHESTRATOR] Executing logic for APIX.");
+    private void login_api(Map<String, String> data) {
+        System.out.println("[API ORCHESTRATOR] Executing logic for the login API.");
+        LoginApi loginApi = new LoginApi();
+        loginApi.requestLoginApi();
     }
 
     private void apiY(Map<String, String> data) {
-        System.out.println("[API ORCHESTRATOR] Executing logic for APIY.");
+        System.out.println("[API ORCHESTRATOR] Executing logic for the login API Y.");
     }
 }

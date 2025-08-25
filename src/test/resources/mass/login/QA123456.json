@@ -2,7 +2,7 @@
   {
     "QA123456": {
       "Api": {
-        "apiX": "TRUE"
+        "login_api": "TRUE"
       },
       "android": {
         "username": "standard_user",
