@@ -65,11 +65,11 @@ public class TestReportData {
     }
 
     public void setTestName(String testName) {
-        if (testName != null && testName.contains("-")) {
-            String[] parts = testName.split("-", 2);
-            this.testName = parts[1].trim().toUpperCase();
+        if (testName != null) {
+            // Remove código inicial tipo "QA123456", seguido de espaços e hífens (um ou mais)
+            this.testName = testName.replaceFirst("^QA\\d{6,}[\\s-]*", "").trim().toUpperCase();
         } else {
-            this.testName = testName != null ? testName.toUpperCase() : "";
+            this.testName = "";
         }
     }
 
